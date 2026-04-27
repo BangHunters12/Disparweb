@@ -5,136 +5,105 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'BondoWisata') — Wisata Bondowoso</title>
-    <meta name="description" content="@yield('description', 'Rekomendasi wisata terbaik di Bondowoso — restoran, hotel, dan ekonomi kreatif dari Dinas Pariwisata.')">
+    <meta name="description" content="@yield('meta-description', 'Temukan destinasi wisata terbaik di Kabupaten Bondowoso — Restoran, Hotel, dan Ekonomi Kreatif.')">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @livewireStyles
-    <script defer src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_API_KEY') }}"></script>
 </head>
-<body class="bg-dark-900 text-gray-100 min-h-screen flex flex-col" x-data>
+<body class="bg-dark-900 text-slate-200 font-sans antialiased">
 
-    {{-- Top Navbar --}}
-    <nav class="sticky top-0 z-50 bg-dark-900/80 backdrop-blur-xl border-b border-dark-700" x-data="{ open: false }">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                {{-- Logo --}}
-                <a href="{{ route('home') }}" class="flex items-center gap-2.5">
-                    <div class="w-8 h-8 bg-gradient-to-br from-amber-400 to-amber-600 rounded-lg flex items-center justify-center">
-                        <span class="text-dark-900 font-black text-sm">BW</span>
-                    </div>
-                    <span class="font-bold text-white text-lg">Bondo<span class="text-gradient">Wisata</span></span>
-                </a>
-
-                {{-- Desktop Nav --}}
-                <div class="hidden md:flex items-center gap-1">
-                    <a href="{{ route('home') }}" class="px-4 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-dark-700 transition-all font-medium {{ request()->routeIs('home') ? 'text-amber-400 bg-dark-700' : '' }}">Beranda</a>
-                    <a href="{{ route('explore') }}" class="px-4 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-dark-700 transition-all font-medium {{ request()->routeIs('explore') ? 'text-amber-400 bg-dark-700' : '' }}">Jelajahi</a>
-                    <a href="{{ route('map') }}" class="px-4 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-dark-700 transition-all font-medium {{ request()->routeIs('map') ? 'text-amber-400 bg-dark-700' : '' }}">Peta</a>
+{{-- Navbar --}}
+<nav class="sticky top-0 z-50 border-b border-dark-700" style="background:rgba(15,17,23,0.9);backdrop-filter:blur(20px)">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+            <a href="{{ route('home') }}" class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-amber-500 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-dark-900" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
                 </div>
+                <span class="font-black text-lg text-white">Bondo<span class="text-amber-400">Wisata</span></span>
+            </a>
 
-                {{-- Auth --}}
-                <div class="hidden md:flex items-center gap-3">
-                    @auth
-                        <a href="{{ auth()->user()->isAdmin() ? '/admin' : '/dashboard' }}" class="btn-secondary btn-sm">Dashboard</a>
-                        <form action="{{ route('logout') }}" method="POST" class="inline">
-                            @csrf
-                            <button type="submit" class="btn-danger btn-sm">Keluar</button>
-                        </form>
-                    @else
-                        <a href="{{ route('login') }}" class="btn-secondary btn-sm">Masuk</a>
-                        <a href="{{ route('register') }}" class="btn-primary btn-sm">Daftar</a>
-                    @endauth
-                </div>
-
-                {{-- Mobile Toggle --}}
-                <button @click="open = !open" class="md:hidden p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-700">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path x-show="!open" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                        <path x-show="open" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
+            <div class="hidden md:flex items-center gap-1">
+                <a href="{{ route('home') }}" class="px-4 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('home') ? 'text-amber-400 bg-amber-500/10' : 'text-gray-400 hover:text-white hover:bg-dark-700' }} transition-all">Beranda</a>
+                <a href="{{ route('explore') }}" class="px-4 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('explore') ? 'text-amber-400 bg-amber-500/10' : 'text-gray-400 hover:text-white hover:bg-dark-700' }} transition-all">Jelajahi</a>
+                <a href="{{ route('map') }}" class="px-4 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('map') ? 'text-amber-400 bg-amber-500/10' : 'text-gray-400 hover:text-white hover:bg-dark-700' }} transition-all">Peta</a>
             </div>
-        </div>
 
-        {{-- Mobile Menu --}}
-        <div x-show="open" x-transition class="md:hidden border-t border-dark-700 bg-dark-900 py-3 px-4 space-y-1">
-            <a href="{{ route('home') }}" class="block px-4 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-dark-700">Beranda</a>
-            <a href="{{ route('explore') }}" class="block px-4 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-dark-700">Jelajahi</a>
-            <a href="{{ route('map') }}" class="block px-4 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-dark-700">Peta</a>
-            <div class="pt-2 border-t border-dark-700 flex gap-2">
+            <div class="flex items-center gap-2">
                 @auth
-                    <a href="{{ auth()->user()->isAdmin() ? '/admin' : '/dashboard' }}" class="btn-secondary btn-sm flex-1 justify-center">Dashboard</a>
-                    <form action="{{ route('logout') }}" method="POST" class="flex-1">
+                    <a href="{{ auth()->user()->role === 'admin' ? route('admin.dashboard') : route('dashboard.index') }}"
+                       class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-dark-700 hover:bg-dark-600 text-sm text-gray-300 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                        {{ Str::limit(auth()->user()->nama_lengkap, 15) }}
+                    </a>
+                    <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="btn-danger btn-sm w-full justify-center">Keluar</button>
+                        <button type="submit" class="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-dark-700 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                        </button>
                     </form>
                 @else
-                    <a href="{{ route('login') }}" class="btn-secondary btn-sm flex-1 justify-center">Masuk</a>
-                    <a href="{{ route('register') }}" class="btn-primary btn-sm flex-1 justify-center">Daftar</a>
+                    <a href="{{ route('login') }}" class="btn-secondary btn-sm">Masuk</a>
+                    <a href="{{ route('register') }}" class="btn-primary btn-sm">Daftar</a>
                 @endauth
             </div>
         </div>
-    </nav>
+    </div>
+</nav>
 
-    {{-- Flash Messages --}}
-    @if(session('success'))
-        <div class="max-w-7xl mx-auto w-full px-4 pt-4" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)">
-            <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl px-4 py-3 text-sm flex items-center gap-2">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                {{ session('success') }}
-            </div>
-        </div>
-    @endif
-    @if(session('error'))
-        <div class="max-w-7xl mx-auto w-full px-4 pt-4" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)">
-            <div class="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm flex items-center gap-2">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
-                {{ session('error') }}
-            </div>
-        </div>
-    @endif
+{{-- Flash Messages --}}
+@if(session('success'))
+    <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)"
+         class="fixed top-20 right-4 z-50 flex items-center gap-3 bg-emerald-500/90 backdrop-blur text-white px-4 py-3 rounded-xl shadow-2xl text-sm font-medium"
+         x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-2">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        {{ session('success') }}
+    </div>
+@endif
+@if(session('error') || $errors->any())
+    <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)"
+         class="fixed top-20 right-4 z-50 flex items-center gap-3 bg-red-500/90 backdrop-blur text-white px-4 py-3 rounded-xl shadow-2xl text-sm font-medium"
+         x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-2">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        {{ session('error', 'Terjadi kesalahan. Periksa form Anda.') }}
+    </div>
+@endif
 
-    {{-- Main Content --}}
-    <main class="flex-1">
-        @yield('content')
-    </main>
+<main>@yield('content')</main>
 
-    {{-- Footer --}}
-    <footer class="border-t border-dark-700 bg-dark-800 mt-16">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-                <div class="col-span-2">
-                    <div class="flex items-center gap-2 mb-4">
-                        <div class="w-8 h-8 bg-gradient-to-br from-amber-400 to-amber-600 rounded-lg flex items-center justify-center">
-                            <span class="text-dark-900 font-black text-sm">BW</span>
-                        </div>
-                        <span class="font-bold text-white text-lg">BondoWisata</span>
+<footer class="bg-dark-800 border-t border-dark-700 mt-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div>
+                <div class="flex items-center gap-2.5 mb-3">
+                    <div class="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-dark-900" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
                     </div>
-                    <p class="text-gray-400 text-sm leading-relaxed">Sistem rekomendasi wisata resmi Kabupaten Bondowoso berdasarkan data Dinas Pariwisata. Temukan restoran, hotel, dan produk ekonomi kreatif terbaik.</p>
+                    <span class="font-black text-white">Bondo<span class="text-amber-400">Wisata</span></span>
                 </div>
-                <div>
-                    <h4 class="font-semibold text-white mb-4">Navigasi</h4>
-                    <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="{{ route('home') }}" class="hover:text-amber-400 transition-colors">Beranda</a></li>
-                        <li><a href="{{ route('explore') }}" class="hover:text-amber-400 transition-colors">Jelajahi</a></li>
-                        <li><a href="{{ route('map') }}" class="hover:text-amber-400 transition-colors">Peta Wisata</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="font-semibold text-white mb-4">Kategori</h4>
-                    <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="{{ route('explore', ['kategori' => 'restoran']) }}" class="hover:text-amber-400 transition-colors">Restoran</a></li>
-                        <li><a href="{{ route('explore', ['kategori' => 'hotel']) }}" class="hover:text-amber-400 transition-colors">Hotel</a></li>
-                        <li><a href="{{ route('explore', ['kategori' => 'ekraf']) }}" class="hover:text-amber-400 transition-colors">Ekonomi Kreatif</a></li>
-                    </ul>
-                </div>
+                <p class="text-gray-500 text-sm leading-relaxed">Platform rekomendasi wisata resmi Kabupaten Bondowoso berbasis data Dinas Pariwisata.</p>
             </div>
-            <div class="border-t border-dark-700 mt-8 pt-8 text-center text-xs text-gray-500">
-                © {{ date('Y') }} BondoWisata. Data resmi dari Dinas Pariwisata Kabupaten Bondowoso.
+            <div>
+                <h3 class="font-semibold text-white text-sm mb-3">Navigasi</h3>
+                <ul class="space-y-2 text-sm text-gray-500">
+                    <li><a href="{{ route('home') }}" class="hover:text-amber-400 transition-colors">Beranda</a></li>
+                    <li><a href="{{ route('explore') }}" class="hover:text-amber-400 transition-colors">Jelajahi Wisata</a></li>
+                    <li><a href="{{ route('map') }}" class="hover:text-amber-400 transition-colors">Peta Interaktif</a></li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-white text-sm mb-3">Kategori</h3>
+                <ul class="space-y-2 text-sm text-gray-500">
+                    <li><a href="{{ route('explore', ['kategori' => 'restoran']) }}" class="hover:text-amber-400 transition-colors">Restoran & Kuliner</a></li>
+                    <li><a href="{{ route('explore', ['kategori' => 'hotel']) }}" class="hover:text-amber-400 transition-colors">Hotel & Penginapan</a></li>
+                    <li><a href="{{ route('explore', ['kategori' => 'ekraf']) }}" class="hover:text-amber-400 transition-colors">Ekonomi Kreatif</a></li>
+                </ul>
             </div>
         </div>
-    </footer>
+        <div class="mt-8 pt-6 border-t border-dark-700 text-center text-gray-600 text-xs">
+            &copy; {{ date('Y') }} BondoWisata — Dinas Pariwisata Kabupaten Bondowoso
+        </div>
+    </div>
+</footer>
 
-    @livewireScripts
-    @stack('scripts')
+@stack('scripts')
 </body>
 </html>
