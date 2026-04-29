@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Tempat;
 use App\Models\Kategori;
 use App\Models\Kecamatan;
+use App\Models\Tempat;
 use Illuminate\Http\Request;
 
 class ExploreController extends Controller
@@ -17,11 +17,11 @@ class ExploreController extends Controller
         $query = Tempat::aktif()->with(['kategori', 'kecamatan', 'ulasan']);
 
         if ($request->filled('search')) {
-            $query->where('nama_usaha', 'like', '%' . $request->search . '%');
+            $query->where('nama_usaha', 'like', '%'.$request->search.'%');
         }
 
         if ($request->filled('kategori')) {
-            $query->whereHas('kategori', fn($q) => $q->where('jenis', $request->kategori));
+            $query->whereHas('kategori', fn ($q) => $q->where('jenis', $request->kategori));
         }
 
         if ($request->filled('kecamatan_id')) {
@@ -59,7 +59,7 @@ class ExploreController extends Controller
         $tempat = Tempat::with([
             'kategori',
             'kecamatan',
-            'ulasan' => fn($q) => $q->with(['user', 'analisisSentimen'])->latest()->take(20),
+            'ulasan' => fn ($q) => $q->with(['user', 'analisisSentimen'])->latest()->take(20),
         ])->findOrFail($id);
 
         $similar = Tempat::aktif()

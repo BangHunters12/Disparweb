@@ -2,9 +2,10 @@
 
 namespace Tests\Unit\Services;
 
+use App\Models\AnalisisSentimen;
 use App\Models\Tempat;
 use App\Models\Ulasan;
-use App\Models\AnalisisSentimen;
+use App\Models\User;
 use App\Services\SawRecommendationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -75,17 +76,22 @@ class SawRecommendationServiceTest extends TestCase
     public function test_saw_score_higher_for_better_place(): void
     {
         $goodTempat = Tempat::factory()->create(['harga_min' => 10000, 'harga_max' => 30000, 'status' => 'aktif']);
-        $badTempat  = Tempat::factory()->create(['harga_min' => 500000, 'harga_max' => 1000000, 'status' => 'aktif']);
+        $badTempat = Tempat::factory()->create(['harga_min' => 500000, 'harga_max' => 1000000, 'status' => 'aktif']);
 
         // Add good reviews to goodTempat
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
         for ($i = 0; $i < 5; $i++) {
-            $ulasan = Ulasan::factory()->create(['tempat_id' => $goodTempat->id, 'user_id' => $user->id, 'rating' => 5.0]);
+            $ulasan = Ulasan::withoutEvents(fn () => Ulasan::factory()->create([
+                'tempat_id' => $goodTempat->id,
+                'user_id' => $user->id,
+                'rating' => 5.0,
+            ]));
+
             AnalisisSentimen::factory()->create(['ulasan_id' => $ulasan->id, 'label_sentimen' => 'positif']);
         }
 
         $goodScore = $this->service->calculateSawScore($goodTempat->fresh());
-        $badScore  = $this->service->calculateSawScore($badTempat->fresh());
+        $badScore = $this->service->calculateSawScore($badTempat->fresh());
 
         $this->assertGreaterThan($badScore, $goodScore);
     }

@@ -3,12 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Tempat;
-use App\Models\Ulasan;
 use App\Models\AnalisisSentimen;
 use App\Models\RekomendasiSaw;
-use App\Models\Kategori;
-use App\Models\Kecamatan;
+use App\Models\Tempat;
+use App\Models\Ulasan;
 use App\Models\User;
 
 class AdminDashboardController extends Controller

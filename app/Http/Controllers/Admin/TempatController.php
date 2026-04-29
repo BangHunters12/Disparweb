@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Tempat;
 use App\Models\Kategori;
 use App\Models\Kecamatan;
+use App\Models\Tempat;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use League\Csv\Reader;
@@ -17,7 +17,7 @@ class TempatController extends Controller
         $query = Tempat::with(['kategori', 'kecamatan'])->withCount('ulasan');
 
         if ($request->filled('search')) {
-            $query->where('nama_usaha', 'like', '%' . $request->search . '%');
+            $query->where('nama_usaha', 'like', '%'.$request->search.'%');
         }
 
         if ($request->filled('status')) {
@@ -25,7 +25,7 @@ class TempatController extends Controller
         }
 
         if ($request->filled('kategori')) {
-            $query->whereHas('kategori', fn($q) => $q->where('jenis', $request->kategori));
+            $query->whereHas('kategori', fn ($q) => $q->where('jenis', $request->kategori));
         }
 
         $tempat = $query->latest()->paginate(15);
@@ -38,6 +38,7 @@ class TempatController extends Controller
     {
         $kategoriList = Kategori::all();
         $kecamatanList = Kecamatan::orderBy('nama')->get();
+
         return view('admin.tempat.create', compact('kategoriList', 'kecamatanList'));
     }
 
@@ -79,6 +80,7 @@ class TempatController extends Controller
         $tempat = Tempat::findOrFail($id);
         $kategoriList = Kategori::all();
         $kecamatanList = Kecamatan::orderBy('nama')->get();
+
         return view('admin.tempat.edit', compact('tempat', 'kategoriList', 'kecamatanList'));
     }
 
@@ -101,7 +103,7 @@ class TempatController extends Controller
             'fasilitas' => 'nullable|array',
             'status' => 'required|in:aktif,tutup,review',
             'foto_utama' => 'nullable|image|max:5120',
-            'kode_dispar' => 'nullable|string|max:20|unique:tempat,kode_dispar,' . $tempat->id,
+            'kode_dispar' => 'nullable|string|max:20|unique:tempat,kode_dispar,'.$tempat->id,
             'tgl_daftar_dispar' => 'nullable|date',
         ]);
 
@@ -148,8 +150,9 @@ class TempatController extends Controller
                 $kategori = Kategori::where('jenis', strtolower($record['jenis_kategori'] ?? ''))->first();
                 $kecamatan = Kecamatan::where('nama', $record['kecamatan'] ?? '')->first();
 
-                if (!$kategori || !$kecamatan) {
-                    $errors[] = "Baris " . ($index + 2) . ": Kategori atau kecamatan tidak ditemukan";
+                if (! $kategori || ! $kecamatan) {
+                    $errors[] = 'Baris '.($index + 2).': Kategori atau kecamatan tidak ditemukan';
+
                     continue;
                 }
 
@@ -173,13 +176,13 @@ class TempatController extends Controller
                 );
                 $imported++;
             } catch (\Exception $e) {
-                $errors[] = "Baris " . ($index + 2) . ": " . $e->getMessage();
+                $errors[] = 'Baris '.($index + 2).': '.$e->getMessage();
             }
         }
 
         $message = "Berhasil import {$imported} data.";
-        if (!empty($errors)) {
-            $message .= " " . count($errors) . " baris error.";
+        if (! empty($errors)) {
+            $message .= ' '.count($errors).' baris error.';
         }
 
         return back()->with('success', $message)->with('import_errors', $errors);

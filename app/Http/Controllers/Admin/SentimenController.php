@@ -3,10 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Ulasan;
-use App\Models\AnalisisSentimen;
 use App\Jobs\AnalyzeSentimentJob;
-use Illuminate\Http\Request;
+use App\Models\AnalisisSentimen;
+use App\Models\Ulasan;
 
 class SentimenController extends Controller
 {
@@ -50,6 +49,6 @@ class SentimenController extends Controller
             AnalyzeSentimentJob::dispatch($u);
         }
 
-        return back()->with('success', 'Analisis sentimen untuk ' . $ulasan->count() . ' ulasan dijadwalkan.');
+        return back()->with('success', 'Analisis sentimen untuk '.$ulasan->count().' ulasan dijadwalkan.');
     }
 }

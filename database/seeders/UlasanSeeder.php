@@ -2,24 +2,26 @@
 
 namespace Database\Seeders;
 
-use App\Models\Ulasan;
 use App\Models\AnalisisSentimen;
 use App\Models\Tempat;
+use App\Models\Ulasan;
 use App\Models\User;
 use App\Services\SentimentAnalysisService;
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class UlasanSeeder extends Seeder
 {
     public function run(): void
     {
         $service = app(SentimentAnalysisService::class);
-        $tempat  = Tempat::all();
-        $users   = User::where('role', 'user')->get();
+        $tempat = Tempat::all();
+        $users = User::where('role', 'user')->get();
 
-        if ($tempat->isEmpty() || $users->isEmpty()) return;
+        if ($tempat->isEmpty() || $users->isEmpty()) {
+            return;
+        }
 
         $ulasanData = [
             // Positif
@@ -59,37 +61,39 @@ class UlasanSeeder extends Seeder
         foreach ($tempat as $t) {
             $numUlasan = rand(3, 8);
             for ($i = 0; $i < $numUlasan && $count < 100; $i++) {
-                $idx  = array_rand($ulasanData);
-                $ud   = $ulasanData[$idx];
+                $idx = array_rand($ulasanData);
+                $ud = $ulasanData[$idx];
                 $user = $users->random();
 
-                $key = $t->id . '_' . $user->id;
-                if (in_array($key, $used)) continue;
+                $key = $t->id.'_'.$user->id;
+                if (in_array($key, $used)) {
+                    continue;
+                }
                 $used[] = $key;
 
                 $ulasan = Ulasan::create([
-                    'id'              => (string) Str::uuid(),
-                    'tempat_id'       => $t->id,
-                    'user_id'         => $user->id,
-                    'rating'          => $ud['rating'],
-                    'teks_ulasan'     => $ud['teks'],
+                    'id' => (string) Str::uuid(),
+                    'tempat_id' => $t->id,
+                    'user_id' => $user->id,
+                    'rating' => $ud['rating'],
+                    'teks_ulasan' => $ud['teks'],
                     'platform_sumber' => 'app',
-                    'tgl_kunjungan'   => Carbon::now()->subDays(rand(1, 180))->toDateString(),
-                    'helpful_count'   => rand(0, 25),
+                    'tgl_kunjungan' => Carbon::now()->subDays(rand(1, 180))->toDateString(),
+                    'helpful_count' => rand(0, 25),
                 ]);
 
                 // Immediately analyze sentiment (no queue for seeder)
                 $result = $service->analyze($ulasan->teks_ulasan);
                 AnalisisSentimen::create([
-                    'id'             => (string) Str::uuid(),
-                    'ulasan_id'      => $ulasan->id,
+                    'id' => (string) Str::uuid(),
+                    'ulasan_id' => $ulasan->id,
                     'label_sentimen' => $result['label_sentimen'],
-                    'skor_positif'   => $result['skor_positif'],
-                    'skor_netral'    => $result['skor_netral'],
-                    'skor_negatif'   => $result['skor_negatif'],
-                    'metode'         => $result['metode'],
-                    'kata_kunci'     => $result['kata_kunci'],
-                    'diproses_at'    => now(),
+                    'skor_positif' => $result['skor_positif'],
+                    'skor_netral' => $result['skor_netral'],
+                    'skor_negatif' => $result['skor_negatif'],
+                    'metode' => $result['metode'],
+                    'kata_kunci' => $result['kata_kunci'],
+                    'diproses_at' => now(),
                 ]);
 
                 $count++;

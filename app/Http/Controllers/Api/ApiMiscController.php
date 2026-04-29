@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Admin\TempatController;
 use App\Http\Controllers\Controller;
-use App\Models\Favorit;
 use App\Models\AnalisisSentimen;
+use App\Models\Favorit;
 use App\Services\SawRecommendationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use League\Csv\Reader;
 
 class ApiMiscController extends Controller
 {
@@ -115,7 +114,8 @@ class ApiMiscController extends Controller
         $request->validate(['csv_file' => 'required|file|mimes:csv,txt']);
 
         // Delegate to admin controller logic
-        $controller = app(\App\Http\Controllers\Admin\TempatController::class);
+        $controller = app(TempatController::class);
+
         return $controller->importCsv($request);
     }
 }

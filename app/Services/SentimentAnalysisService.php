@@ -105,6 +105,7 @@ class SentimentAnalysisService
         $text = Str::lower($text);
         $text = preg_replace('/[^\p{L}\p{N}\s]/u', ' ', $text);
         $text = preg_replace('/\s+/', ' ', $text);
+
         return trim($text);
     }
 
@@ -113,7 +114,7 @@ class SentimentAnalysisService
      */
     public function tokenize(string $text): array
     {
-        return array_filter(explode(' ', $text), fn($w) => strlen($w) > 1);
+        return array_filter(explode(' ', $text), fn ($w) => strlen($w) > 1);
     }
 
     /**
@@ -123,7 +124,7 @@ class SentimentAnalysisService
     {
         return array_values(array_filter(
             $tokens,
-            fn($token) => !in_array($token, $this->stopwords)
+            fn ($token) => ! in_array($token, $this->stopwords)
         ));
     }
 
@@ -136,6 +137,7 @@ class SentimentAnalysisService
         $word = preg_replace('/(kan|an|i|lah|kah|nya|mu|ku)$/', '', $word);
         // Remove common prefixes
         $word = preg_replace('/^(me|mem|men|meny|meng|ber|di|ke|se|per|ter|pe)/', '', $word);
+
         return $word;
     }
 
@@ -158,6 +160,7 @@ class SentimentAnalysisService
         foreach ($allTokens as $i => $token) {
             if (in_array($token, $this->negationWords)) {
                 $negationActive = true;
+
                 continue;
             }
 
@@ -218,8 +221,11 @@ class SentimentAnalysisService
      */
     protected function isPositiveWord(string $word): bool
     {
-        if (in_array($word, $this->positiveWords)) return true;
+        if (in_array($word, $this->positiveWords)) {
+            return true;
+        }
         $stemmed = $this->stem($word);
+
         return in_array($stemmed, $this->positiveWords);
     }
 
@@ -228,8 +234,11 @@ class SentimentAnalysisService
      */
     protected function isNegativeWord(string $word): bool
     {
-        if (in_array($word, $this->negativeWords)) return true;
+        if (in_array($word, $this->negativeWords)) {
+            return true;
+        }
         $stemmed = $this->stem($word);
+
         return in_array($stemmed, $this->negativeWords);
     }
 
@@ -244,6 +253,7 @@ class SentimentAnalysisService
                 $keywords[] = $token;
             }
         }
+
         return array_unique($keywords);
     }
 
@@ -254,8 +264,13 @@ class SentimentAnalysisService
     {
         $max = max($scores);
 
-        if ($scores['positif'] === $max) return 'positif';
-        if ($scores['negatif'] === $max) return 'negatif';
+        if ($scores['positif'] === $max) {
+            return 'positif';
+        }
+        if ($scores['negatif'] === $max) {
+            return 'negatif';
+        }
+
         return 'netral';
     }
 }

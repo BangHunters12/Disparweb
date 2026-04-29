@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Ulasan;
 use App\Models\Favorit;
-use App\Models\Tempat;
+use App\Models\Ulasan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -33,7 +32,7 @@ class DashboardController extends Controller
 
         $validated = $request->validate([
             'nama_lengkap' => 'required|string|max:100',
-            'email' => 'required|email|max:150|unique:users,email,' . $user->id,
+            'email' => 'required|email|max:150|unique:users,email,'.$user->id,
             'foto_profil' => 'nullable|image|max:2048',
             'preferensi' => 'nullable|array',
         ]);
@@ -78,6 +77,7 @@ class DashboardController extends Controller
 
         if ($existing) {
             $existing->delete();
+
             return back()->with('success', 'Dihapus dari favorit.');
         }
 

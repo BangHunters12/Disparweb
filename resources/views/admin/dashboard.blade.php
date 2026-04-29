@@ -78,7 +78,9 @@
     {{-- Sentiment Chart --}}
     <div class="card p-6">
         <h3 class="font-bold text-white mb-5">Distribusi Sentimen Ulasan</h3>
-        <canvas id="sentimenChart" height="200"></canvas>
+        <div class="admin-chart-frame">
+            <canvas id="sentimenChart"></canvas>
+        </div>
         <div class="flex justify-center gap-6 mt-4 text-sm text-gray-400">
             <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-400 inline-block"></span> Positif ({{ $sentimenDist['positif'] }})</span>
             <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-400 inline-block"></span> Netral ({{ $sentimenDist['netral'] }})</span>

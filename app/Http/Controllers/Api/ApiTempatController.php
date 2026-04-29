@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Tempat;
 use App\Models\Kategori;
 use App\Models\Kecamatan;
 use App\Models\RekomendasiSaw;
+use App\Models\Tempat;
 use Illuminate\Http\Request;
 
 class ApiTempatController extends Controller
@@ -16,7 +16,7 @@ class ApiTempatController extends Controller
         $query = Tempat::aktif()->with(['kategori', 'kecamatan']);
 
         if ($request->filled('kategori')) {
-            $query->whereHas('kategori', fn($q) => $q->where('jenis', $request->kategori));
+            $query->whereHas('kategori', fn ($q) => $q->where('jenis', $request->kategori));
         }
         if ($request->filled('kecamatan_id')) {
             $query->where('kecamatan_id', $request->kecamatan_id);
@@ -32,7 +32,7 @@ class ApiTempatController extends Controller
                 ->having('ulasan_avg_rating', '>=', $request->rating_min);
         }
         if ($request->filled('search')) {
-            $query->where('nama_usaha', 'like', '%' . $request->search . '%');
+            $query->where('nama_usaha', 'like', '%'.$request->search.'%');
         }
 
         $sortBy = $request->get('sort_by', 'terbaru');
@@ -57,7 +57,7 @@ class ApiTempatController extends Controller
         $tempat = Tempat::with([
             'kategori',
             'kecamatan',
-            'ulasan' => fn($q) => $q->with(['user:id,nama_lengkap,foto_profil', 'analisisSentimen'])->latest(),
+            'ulasan' => fn ($q) => $q->with(['user:id,nama_lengkap,foto_profil', 'analisisSentimen'])->latest(),
         ])->findOrFail($id);
 
         $tempat->rata_rating = $tempat->ulasan->avg('rating') ?? 0;
@@ -76,7 +76,7 @@ class ApiTempatController extends Controller
             ->orderBy('peringkat');
 
         if ($request->filled('kategori')) {
-            $query->whereHas('tempat.kategori', fn($q) => $q->where('jenis', $request->kategori));
+            $query->whereHas('tempat.kategori', fn ($q) => $q->where('jenis', $request->kategori));
         }
 
         $perPage = min($request->get('per_page', 15), 50);

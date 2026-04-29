@@ -2,14 +2,15 @@
 
 namespace App\Services;
 
-use App\Models\Tempat;
 use App\Models\RekomendasiSaw;
-use Illuminate\Support\Facades\DB;
+use App\Models\Tempat;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class SawRecommendationService
 {
     protected array $weights;
+
     protected array $criteriaTypes;
 
     public function __construct()
@@ -26,8 +27,8 @@ class SawRecommendationService
         $minReviews = config('saw.min_reviews', 1);
 
         $tempatList = Tempat::aktif()
+            ->has('ulasan', '>=', $minReviews)
             ->withCount('ulasan')
-            ->having('ulasan_count', '>=', $minReviews)
             ->get();
 
         if ($tempatList->isEmpty()) {
@@ -68,7 +69,9 @@ class SawRecommendationService
 
             // Price score (use average of min-max, lower is better for cost)
             $avgHarga = ($tempat->harga_min + $tempat->harga_max) / 2;
-            if ($avgHarga <= 0) $avgHarga = 1;
+            if ($avgHarga <= 0) {
+                $avgHarga = 1;
+            }
 
             // Popularity: number of reviews
             $popularitas = $tempat->ulasan()->count();
@@ -97,7 +100,9 @@ class SawRecommendationService
      */
     protected function normalizeMatrix(array $matrix): array
     {
-        if (empty($matrix)) return [];
+        if (empty($matrix)) {
+            return [];
+        }
 
         $criteria = ['rating', 'sentimen', 'harga', 'popularitas', 'kebaruan'];
         $normalized = [];
@@ -135,7 +140,9 @@ class SawRecommendationService
         $results = [];
 
         foreach ($tempatList as $tempat) {
-            if (!isset($normalized[$tempat->id])) continue;
+            if (! isset($normalized[$tempat->id])) {
+                continue;
+            }
 
             $row = $normalized[$tempat->id];
 
@@ -159,7 +166,7 @@ class SawRecommendationService
         }
 
         // Sort by final score descending
-        usort($results, fn($a, $b) => $b['skor_saw_final'] <=> $a['skor_saw_final']);
+        usort($results, fn ($a, $b) => $b['skor_saw_final'] <=> $a['skor_saw_final']);
 
         // Assign peringkat (rank)
         foreach ($results as $i => &$result) {

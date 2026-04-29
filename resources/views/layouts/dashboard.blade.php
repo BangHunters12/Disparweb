@@ -4,11 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Dashboard') — BondoWisata</title>
+    <title>@yield('title', 'Dashboard') - BondoWisata</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @if(request()->routeIs('admin.*'))
+        <link rel="stylesheet" href="{{ asset('css/admin-theme.css') }}">
+    @endif
 </head>
-<body class="bg-dark-900 text-slate-200 font-sans antialiased">
-<div class="flex h-screen overflow-hidden">
+<body class="dashboard-body {{ request()->routeIs('admin.*') ? 'admin-body' : '' }} bg-dark-900 text-slate-200 font-sans antialiased">
+<div class="dashboard-shell flex h-screen overflow-hidden">
     {{-- Sidebar --}}
     <aside class="w-64 flex-shrink-0 bg-dark-800 border-r border-dark-700 flex flex-col overflow-y-auto">
         <div class="p-5 border-b border-dark-700">

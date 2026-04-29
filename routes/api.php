@@ -1,9 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\ApiAuthController;
+use App\Http\Controllers\Api\ApiMiscController;
 use App\Http\Controllers\Api\ApiTempatController;
 use App\Http\Controllers\Api\ApiUlasanController;
-use App\Http\Controllers\Api\ApiMiscController;
 use Illuminate\Support\Facades\Route;
 
 /*

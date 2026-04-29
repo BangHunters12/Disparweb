@@ -2,15 +2,15 @@
 
 namespace App\Jobs;
 
-use App\Models\Ulasan;
 use App\Models\AnalisisSentimen;
+use App\Models\Ulasan;
 use App\Services\SentimentAnalysisService;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Carbon\Carbon;
 
 class AnalyzeSentimentJob implements ShouldQueue
 {
@@ -43,5 +43,6 @@ class AnalyzeSentimentJob implements ShouldQueue
     }
 
     public int $tries = 3;
+
     public int $backoff = 30;
 }

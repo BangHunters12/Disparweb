@@ -12,11 +12,11 @@ return [
     */
 
     'weights' => [
-        'rating'      => 0.40, // 40% - Rata-rata rating ulasan
-        'sentimen'    => 0.25, // 25% - Skor sentimen positif
-        'harga'       => 0.15, // 15% - Keterjangkauan harga (cost benefit)
+        'rating' => 0.40, // 40% - Rata-rata rating ulasan
+        'sentimen' => 0.25, // 25% - Skor sentimen positif
+        'harga' => 0.15, // 15% - Keterjangkauan harga (cost benefit)
         'popularitas' => 0.10, // 10% - Jumlah ulasan/kunjungan
-        'kebaruan'    => 0.10, // 10% - Kebaruan data/ulasan
+        'kebaruan' => 0.10, // 10% - Kebaruan data/ulasan
     ],
 
     /*
@@ -28,11 +28,11 @@ return [
     */
 
     'criteria_types' => [
-        'rating'      => 'benefit',
-        'sentimen'    => 'benefit',
-        'harga'       => 'cost',
+        'rating' => 'benefit',
+        'sentimen' => 'benefit',
+        'harga' => 'cost',
         'popularitas' => 'benefit',
-        'kebaruan'    => 'benefit',
+        'kebaruan' => 'benefit',
     ],
 
     /*
