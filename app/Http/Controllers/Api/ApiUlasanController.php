@@ -3,15 +3,17 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\AnalyzeSentimentJob;
 use App\Models\Ulasan;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ApiUlasanController extends Controller
 {
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'tempat_id' => 'required|exists:tempat,id',
+            'tempat_id' => ['required', Rule::exists('tempat', 'id')->where('status', 'aktif')],
             'rating' => 'required|numeric|min:1|max:5',
             'teks_ulasan' => 'required|string|min:10|max:2000',
             'tgl_kunjungan' => 'nullable|date|before_or_equal:today',
@@ -21,6 +23,7 @@ class ApiUlasanController extends Controller
         $validated['platform_sumber'] = 'app';
 
         $ulasan = Ulasan::create($validated);
+        AnalyzeSentimentJob::dispatch($ulasan);
 
         return response()->json([
             'success' => true,
@@ -39,6 +42,7 @@ class ApiUlasanController extends Controller
         ]);
 
         $ulasan->update($validated);
+        AnalyzeSentimentJob::dispatch($ulasan->fresh());
 
         return response()->json([
             'success' => true,

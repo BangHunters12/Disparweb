@@ -10,7 +10,15 @@
         <link rel="stylesheet" href="{{ asset('css/admin-theme.css') }}">
     @endif
 </head>
-<body class="dashboard-body {{ request()->routeIs('admin.*') ? 'admin-body' : '' }} bg-dark-900 text-slate-200 font-sans antialiased">
+<body class="dashboard-body {{ request()->routeIs('admin.*') ? 'admin-body is-loading' : '' }} bg-dark-900 text-slate-200 font-sans antialiased">
+@if(request()->routeIs('admin.*'))
+    <div class="admin-page-loader" aria-hidden="true">
+        <div>
+            <span></span>
+            <strong>Loading</strong>
+        </div>
+    </div>
+@endif
 <div class="dashboard-shell flex h-screen overflow-hidden">
     {{-- Sidebar --}}
     <aside class="w-64 flex-shrink-0 bg-dark-800 border-r border-dark-700 flex flex-col overflow-y-auto">
@@ -115,5 +123,34 @@
     </div>
 </div>
 @stack('scripts')
+@if(request()->routeIs('admin.*'))
+    <script>
+        window.addEventListener('load', function () {
+            document.body.classList.remove('is-loading');
+        });
+
+        document.addEventListener('click', function (event) {
+            const link = event.target.closest('a[href]');
+            if (!link) return;
+
+            const url = new URL(link.href, window.location.href);
+            const isSamePage = url.pathname === window.location.pathname && url.hash;
+            const isDownload = link.hasAttribute('download');
+            const isNewTarget = link.target && link.target !== '_self';
+
+            if (url.origin === window.location.origin && !isSamePage && !isDownload && !isNewTarget) {
+                document.body.classList.add('is-loading');
+            }
+        });
+
+        document.addEventListener('submit', function () {
+            document.body.classList.add('is-loading');
+        });
+
+        window.addEventListener('pageshow', function () {
+            document.body.classList.remove('is-loading');
+        });
+    </script>
+@endif
 </body>
 </html>

@@ -45,16 +45,9 @@
                             </div>
                             <h1 class="text-2xl font-black text-white">{{ $tempat->nama_usaha }}</h1>
                         </div>
-                        @auth
-                            @php $isFav = auth()->user()->favorit()->where('tempat_id', $tempat->id)->exists(); @endphp
-                            <form action="{{ route('dashboard.favorit.toggle', $tempat->id) }}" method="POST">
-                                @csrf
-                                <button type="submit" class="{{ $isFav ? 'btn-danger' : 'btn-secondary' }} btn flex items-center gap-2">
-                                    <svg class="w-4 h-4" fill="{{ $isFav ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
-                                    {{ $isFav ? 'Hapus Favorit' : 'Simpan Favorit' }}
-                                </button>
-                            </form>
-                        @endauth
+                        <div class="text-sm text-gray-400 max-w-xs">
+                            Favorit dan ulasan pengguna tersedia melalui aplikasi mobile.
+                        </div>
                     </div>
 
                     <div class="flex flex-wrap gap-4 mt-4 text-sm text-gray-400">
@@ -117,53 +110,12 @@
                 </div>
             @endif
 
-            {{-- Write Review Form --}}
-            @auth
-                <div class="card p-6">
-                    <h3 class="font-bold text-white mb-4">Tulis Ulasan</h3>
-                    <form action="{{ route('dashboard.ulasan.store') }}" method="POST" class="space-y-4" x-data="{ rating: 0 }">
-                        @csrf
-                        <input type="hidden" name="tempat_id" value="{{ $tempat->id }}">
-                        <input type="hidden" name="rating" x-model="rating">
-
-                        <div>
-                            <label class="form-label">Rating *</label>
-                            <div class="flex items-center gap-1 mt-1">
-                                @for($i = 1; $i <= 5; $i++)
-                                    <button type="button" @click="rating = {{ $i }}"
-                                            class="transition-transform hover:scale-110">
-                                        <svg class="w-8 h-8" :class="rating >= {{ $i }} ? 'text-amber-400 fill-amber-400' : 'text-gray-600'" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                                    </button>
-                                @endfor
-                                <span class="ml-2 text-sm text-gray-400" x-text="rating > 0 ? rating + ' bintang' : 'Pilih rating'"></span>
-                            </div>
-                            @error('rating') <p class="form-error">{{ $message }}</p> @enderror
-                        </div>
-
-                        <div>
-                            <label class="form-label">Ulasan *</label>
-                            <textarea name="teks_ulasan" rows="3" placeholder="Ceritakan pengalamanmu di sini..." class="form-input resize-none @error('teks_ulasan') border-red-500 @enderror" required minlength="10">{{ old('teks_ulasan') }}</textarea>
-                            @error('teks_ulasan') <p class="form-error">{{ $message }}</p> @enderror
-                        </div>
-
-                        <div>
-                            <label class="form-label">Tanggal Kunjungan</label>
-                            <input type="date" name="tgl_kunjungan" value="{{ old('tgl_kunjungan') }}" max="{{ date('Y-m-d') }}" class="form-input">
-                        </div>
-
-                        <button type="submit" class="btn btn-primary" :disabled="rating === 0">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
-                            Kirim Ulasan
-                        </button>
-                    </form>
-                </div>
-            @else
-                <div class="card p-6 text-center">
-                    <svg class="w-10 h-10 text-gray-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                    <p class="text-gray-400 text-sm mb-3">Login untuk memberikan ulasan</p>
-                    <a href="{{ route('login') }}" class="btn btn-primary btn-sm">Login Sekarang</a>
-                </div>
-            @endauth
+            {{-- Mobile User Action --}}
+            <div class="card p-6 text-center">
+                <svg class="w-10 h-10 text-gray-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                <h3 class="font-bold text-white mb-2">Aksi pengguna di aplikasi mobile</h3>
+                <p class="text-gray-400 text-sm">Favorit, tulis ulasan, dan kelola pengalaman kunjungan dilakukan dari aplikasi mobile. Web publik hanya menampilkan informasi tempat.</p>
+            </div>
 
             {{-- Reviews List --}}
             <div class="card p-6">

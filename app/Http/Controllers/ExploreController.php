@@ -56,7 +56,7 @@ class ExploreController extends Controller
 
     public function show(string $id)
     {
-        $tempat = Tempat::with([
+        $tempat = Tempat::aktif()->with([
             'kategori',
             'kecamatan',
             'ulasan' => fn ($q) => $q->with(['user', 'analisisSentimen'])->latest()->take(20),

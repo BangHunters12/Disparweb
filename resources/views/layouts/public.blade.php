@@ -42,7 +42,6 @@
                     </form>
                 @else
                     <a href="{{ route('login') }}" class="btn-secondary btn-sm">Masuk</a>
-                    <a href="{{ route('register') }}" class="btn-primary btn-sm">Daftar</a>
                 @endauth
             </div>
         </div>

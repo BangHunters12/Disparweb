@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\AnalyzeSentimentJob;
 use App\Models\Favorit;
 use App\Models\Ulasan;
 use Illuminate\Http\Request;
@@ -105,7 +106,8 @@ class DashboardController extends Controller
         $validated['user_id'] = Auth::id();
         $validated['platform_sumber'] = 'app';
 
-        Ulasan::create($validated);
+        $ulasan = Ulasan::create($validated);
+        AnalyzeSentimentJob::dispatch($ulasan);
 
         return back()->with('success', 'Ulasan berhasil ditambahkan!');
     }
@@ -120,6 +122,7 @@ class DashboardController extends Controller
         ]);
 
         $ulasan->update($validated);
+        AnalyzeSentimentJob::dispatch($ulasan->fresh());
 
         return back()->with('success', 'Ulasan berhasil diperbarui!');
     }

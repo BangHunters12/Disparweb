@@ -42,7 +42,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middl
 | User Dashboard Routes
 |--------------------------------------------------------------------------
 */
-Route::middleware('auth')->prefix('dashboard')->name('dashboard.')->group(function () {
+Route::middleware(['auth', 'web_user_disabled'])->prefix('dashboard')->name('dashboard.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('index');
     Route::get('/profile', [DashboardController::class, 'profile'])->name('profile');
     Route::put('/profile', [DashboardController::class, 'updateProfile'])->name('profile.update');
@@ -59,12 +59,14 @@ Route::middleware('auth')->prefix('dashboard')->name('dashboard.')->group(functi
 | Admin Routes
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
 
     // Tempat CRUD
     Route::resource('tempat', TempatController::class);
     Route::post('tempat/import-csv', [TempatController::class, 'importCsv'])->name('tempat.import-csv');
+    Route::put('tempat/{tempat}/ulasan/{ulasan}', [TempatController::class, 'updateUlasan'])->name('tempat.ulasan.update');
+    Route::delete('tempat/{tempat}/ulasan/{ulasan}', [TempatController::class, 'destroyUlasan'])->name('tempat.ulasan.destroy');
 
     // Sentimen
     Route::get('/sentimen', [SentimenController::class, 'index'])->name('sentimen.index');

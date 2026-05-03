@@ -47,5 +47,15 @@ return [
     | Minimum Ulasan untuk Masuk Rekomendasi
     |--------------------------------------------------------------------------
     */
-    'min_reviews' => 1,
+    'min_reviews' => 0,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Nilai Default untuk Tempat Baru
+    |--------------------------------------------------------------------------
+    | Tempat aktif yang belum punya ulasan tetap masuk rekomendasi dengan nilai
+    | netral supaya data baru tidak hilang dari proses bisnis.
+    */
+    'default_rating' => 3.0,
+    'default_price' => 50000,
 ];

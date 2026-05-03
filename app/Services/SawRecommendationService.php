@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AppSetting;
 use App\Models\RekomendasiSaw;
 use App\Models\Tempat;
 use Carbon\Carbon;
@@ -15,7 +16,7 @@ class SawRecommendationService
 
     public function __construct()
     {
-        $this->weights = config('saw.weights');
+        $this->weights = $this->loadWeights();
         $this->criteriaTypes = config('saw.criteria_types');
     }
 
@@ -24,12 +25,15 @@ class SawRecommendationService
      */
     public function recalculateAll(?string $userId = null): int
     {
-        $minReviews = config('saw.min_reviews', 1);
+        $minReviews = (int) config('saw.min_reviews', 0);
 
-        $tempatList = Tempat::aktif()
-            ->has('ulasan', '>=', $minReviews)
-            ->withCount('ulasan')
-            ->get();
+        $query = Tempat::aktif()->withCount('ulasan');
+
+        if ($minReviews > 0) {
+            $query->has('ulasan', '>=', $minReviews);
+        }
+
+        $tempatList = $query->get();
 
         if ($tempatList->isEmpty()) {
             return 0;
@@ -58,7 +62,10 @@ class SawRecommendationService
         $matrix = [];
 
         foreach ($tempatList as $tempat) {
-            $avgRating = $tempat->ulasan()->avg('rating') ?? 0;
+            $avgRating = $tempat->ulasan()->avg('rating');
+            $avgRating = $avgRating !== null
+                ? (float) $avgRating
+                : (float) config('saw.default_rating', 3.0);
 
             // Sentiment score: ratio of positive sentiments
             $totalSentimen = $tempat->analisisSentimen()->count();
@@ -67,20 +74,14 @@ class SawRecommendationService
                 ->count();
             $skorSentimen = $totalSentimen > 0 ? ($positifCount / $totalSentimen) : 0.5;
 
-            // Price score (use average of min-max, lower is better for cost)
-            $avgHarga = ($tempat->harga_min + $tempat->harga_max) / 2;
-            if ($avgHarga <= 0) {
-                $avgHarga = 1;
-            }
+            $avgHarga = $this->averagePrice($tempat);
 
             // Popularity: number of reviews
             $popularitas = $tempat->ulasan()->count();
 
             // Recency: days since last review (newer is better)
             $lastReview = $tempat->ulasan()->latest()->first();
-            $daysSinceLastReview = $lastReview
-                ? Carbon::now()->diffInDays($lastReview->created_at)
-                : 365;
+            $daysSinceLastReview = Carbon::now()->diffInDays($lastReview?->created_at ?? $tempat->updated_at);
             $kebaruan = max(1, 365 - $daysSinceLastReview);
 
             $matrix[$tempat->id] = [
@@ -211,14 +212,17 @@ class SawRecommendationService
     {
         $w = $weights ?? $this->weights;
 
-        $avgRating = $tempat->ulasan()->avg('rating') ?? 0;
+        $avgRating = $tempat->ulasan()->avg('rating');
+        $avgRating = $avgRating !== null
+            ? (float) $avgRating
+            : (float) config('saw.default_rating', 3.0);
         $totalSentimen = $tempat->analisisSentimen()->count();
         $positifCount = $tempat->analisisSentimen()->where('label_sentimen', 'positif')->count();
         $skorSentimen = $totalSentimen > 0 ? ($positifCount / $totalSentimen) : 0.5;
-        $avgHarga = ($tempat->harga_min + $tempat->harga_max) / 2;
+        $avgHarga = $this->averagePrice($tempat);
         $popularitas = $tempat->ulasan()->count();
         $lastReview = $tempat->ulasan()->latest()->first();
-        $daysSince = $lastReview ? Carbon::now()->diffInDays($lastReview->created_at) : 365;
+        $daysSince = Carbon::now()->diffInDays($lastReview?->created_at ?? $tempat->updated_at);
         $kebaruan = max(1, 365 - $daysSince);
 
         // Simplified normalization using expected ranges
@@ -243,7 +247,12 @@ class SawRecommendationService
      */
     public function updateWeights(array $newWeights): void
     {
-        $this->weights = $newWeights;
+        $this->weights = $this->normalizeWeights($newWeights);
+
+        AppSetting::updateOrCreate(
+            ['key' => 'saw.weights'],
+            ['value' => $this->weights]
+        );
     }
 
     /**
@@ -252,5 +261,38 @@ class SawRecommendationService
     public function getWeights(): array
     {
         return $this->weights;
+    }
+
+    protected function loadWeights(): array
+    {
+        $setting = AppSetting::where('key', 'saw.weights')->first();
+
+        return $this->normalizeWeights($setting?->value ?? config('saw.weights'));
+    }
+
+    protected function normalizeWeights(array $weights): array
+    {
+        $defaults = config('saw.weights');
+        $normalized = [];
+
+        foreach ($defaults as $key => $default) {
+            $normalized[$key] = isset($weights[$key]) ? (float) $weights[$key] : (float) $default;
+        }
+
+        return $normalized;
+    }
+
+    protected function averagePrice(Tempat $tempat): float
+    {
+        $prices = array_filter([
+            (float) $tempat->harga_min,
+            (float) $tempat->harga_max,
+        ], fn (float $price) => $price > 0);
+
+        if (empty($prices)) {
+            return (float) config('saw.default_price', 50000);
+        }
+
+        return array_sum($prices) / count($prices);
     }
 }

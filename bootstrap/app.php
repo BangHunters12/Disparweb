@@ -17,6 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureFrontendRequestsAreStateful::class,
         ]);
         $middleware->throttleApi('60,1');
+        $middleware->alias([
+            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'web_user_disabled' => \App\Http\Middleware\RedirectWebUsersToMobile::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

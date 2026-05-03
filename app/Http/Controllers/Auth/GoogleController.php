@@ -26,24 +26,17 @@ class GoogleController extends Controller
             ->orWhere('email', $googleUser->getEmail())
             ->first();
 
-        if ($user) {
-            if (! $user->google_id) {
-                $user->update(['google_id' => $googleUser->getId()]);
-            }
-        } else {
-            $user = User::create([
-                'nama_lengkap' => $googleUser->getName(),
-                'email' => $googleUser->getEmail(),
-                'google_id' => $googleUser->getId(),
-                'foto_profil' => $googleUser->getAvatar(),
-                'role' => 'user',
-                'password' => null,
-            ]);
-            $user->assignRole('user');
+        if (! $user || ! $user->isAdmin()) {
+            return redirect('/login')
+                ->with('error', 'Login Google web hanya tersedia untuk admin yang sudah terdaftar.');
+        }
+
+        if (! $user->google_id) {
+            $user->update(['google_id' => $googleUser->getId()]);
         }
 
         Auth::login($user, true);
 
-        return redirect('/dashboard');
+        return redirect('/admin');
     }
 }

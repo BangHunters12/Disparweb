@@ -31,7 +31,6 @@
                            value="{{ $weights[$c['key']] }}"
                            class="w-full accent-amber-500"
                            oninput="document.getElementById('pct_{{ $c['key'] }}').textContent = Math.round(this.value * 100) + '%'">
-                    <input type="hidden" name="w_{{ $c['key'] }}" id="h_{{ $c['key'] }}" value="{{ $weights[$c['key'] ] }}">
                 </div>
             @endforeach
             <div class="pt-3 border-t border-dark-700">

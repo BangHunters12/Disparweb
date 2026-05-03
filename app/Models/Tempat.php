@@ -64,6 +64,11 @@ class Tempat extends Model
         return $this->hasMany(Ulasan::class);
     }
 
+    public function latestUlasan()
+    {
+        return $this->hasOne(Ulasan::class)->latestOfMany('created_at');
+    }
+
     public function favorit()
     {
         return $this->hasMany(Favorit::class);

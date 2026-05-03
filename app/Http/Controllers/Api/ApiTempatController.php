@@ -54,7 +54,7 @@ class ApiTempatController extends Controller
 
     public function show(string $id)
     {
-        $tempat = Tempat::with([
+        $tempat = Tempat::aktif()->with([
             'kategori',
             'kecamatan',
             'ulasan' => fn ($q) => $q->with(['user:id,nama_lengkap,foto_profil', 'analisisSentimen'])->latest(),
@@ -72,6 +72,7 @@ class ApiTempatController extends Controller
     public function rekomendasi(Request $request)
     {
         $query = RekomendasiSaw::whereNull('user_id')
+            ->whereHas('tempat', fn ($q) => $q->aktif())
             ->with(['tempat.kategori', 'tempat.kecamatan'])
             ->orderBy('peringkat');
 
