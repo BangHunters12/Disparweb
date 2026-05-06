@@ -10,6 +10,7 @@ class AnalisisSentimenFactory extends Factory
     public function definition(): array
     {
         $label = fake()->randomElement(['positif', 'netral', 'negatif']);
+
         return [
             'ulasan_id' => Ulasan::factory(),
             'label_sentimen' => $label,

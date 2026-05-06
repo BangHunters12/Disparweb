@@ -10,6 +10,7 @@ class RekomendasiSaw extends Model
     use HasUuids;
 
     protected $table = 'rekomendasi_saw';
+
     public $timestamps = false;
 
     protected $fillable = [

@@ -3,10 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Ulasan;
-use App\Models\AnalisisSentimen;
 use App\Jobs\AnalyzeSentimentJob;
-use Illuminate\Http\Request;
+use App\Models\AnalisisSentimen;
+use App\Models\Ulasan;
 
 class SentimenController extends Controller
 {
@@ -18,17 +17,10 @@ class SentimenController extends Controller
             'negatif' => AnalisisSentimen::where('label_sentimen', 'negatif')->count(),
         ];
 
-        // Keyword cloud — kata_kunci disimpan sebagai JSON array
+        // Keyword cloud data
         $allKeywords = AnalisisSentimen::whereNotNull('kata_kunci')
-            ->get()
-            ->flatMap(function ($a) {
-                $kw = $a->kata_kunci;
-                if (is_string($kw)) {
-                    $kw = json_decode($kw, true) ?? [];
-                }
-                return is_array($kw) ? $kw : [];
-            })
-            ->filter()
+            ->pluck('kata_kunci')
+            ->flatten()
             ->countBy()
             ->sortDesc()
             ->take(50)
@@ -44,24 +36,19 @@ class SentimenController extends Controller
     public function reanalyze(string $ulasanId)
     {
         $ulasan = Ulasan::findOrFail($ulasanId);
+        AnalyzeSentimentJob::dispatch($ulasan);
 
-        // Jalankan langsung (synchronous) tanpa queue worker
-        AnalyzeSentimentJob::dispatchSync($ulasan);
-
-        return back()->with('success', 'Analisis sentimen berhasil diperbarui.');
+        return back()->with('success', 'Analisis sentimen dijadwalkan ulang.');
     }
 
     public function reanalyzeAll()
     {
         $ulasan = Ulasan::whereNotNull('teks_ulasan')->get();
 
-        $count = 0;
         foreach ($ulasan as $u) {
-            // Jalankan langsung tanpa queue agar hasilnya langsung terlihat
-            AnalyzeSentimentJob::dispatchSync($u);
-            $count++;
+            AnalyzeSentimentJob::dispatch($u);
         }
 
-        return back()->with('success', "Analisis sentimen selesai untuk {$count} ulasan.");
+        return back()->with('success', 'Analisis sentimen untuk '.$ulasan->count().' ulasan dijadwalkan.');
     }
 }

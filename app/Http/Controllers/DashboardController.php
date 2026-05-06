@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Ulasan;
+use App\Jobs\AnalyzeSentimentJob;
 use App\Models\Favorit;
-use App\Models\Tempat;
+use App\Models\Ulasan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -33,7 +33,7 @@ class DashboardController extends Controller
 
         $validated = $request->validate([
             'nama_lengkap' => 'required|string|max:100',
-            'email' => 'required|email|max:150|unique:users,email,' . $user->id,
+            'email' => 'required|email|max:150|unique:users,email,'.$user->id,
             'foto_profil' => 'nullable|image|max:2048',
             'preferensi' => 'nullable|array',
         ]);
@@ -78,6 +78,7 @@ class DashboardController extends Controller
 
         if ($existing) {
             $existing->delete();
+
             return back()->with('success', 'Dihapus dari favorit.');
         }
 
@@ -105,7 +106,8 @@ class DashboardController extends Controller
         $validated['user_id'] = Auth::id();
         $validated['platform_sumber'] = 'app';
 
-        Ulasan::create($validated);
+        $ulasan = Ulasan::create($validated);
+        AnalyzeSentimentJob::dispatch($ulasan);
 
         return back()->with('success', 'Ulasan berhasil ditambahkan!');
     }
@@ -120,6 +122,7 @@ class DashboardController extends Controller
         ]);
 
         $ulasan->update($validated);
+        AnalyzeSentimentJob::dispatch($ulasan->fresh());
 
         return back()->with('success', 'Ulasan berhasil diperbarui!');
     }

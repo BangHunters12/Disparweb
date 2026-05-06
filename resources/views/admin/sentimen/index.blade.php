@@ -36,7 +36,9 @@
     {{-- Pie Chart --}}
     <div class="card p-6">
         <h3 class="font-bold text-white mb-4">Distribusi Sentimen</h3>
-        <canvas id="pieChart" height="220"></canvas>
+        <div class="admin-chart-frame admin-chart-frame-lg">
+            <canvas id="pieChart"></canvas>
+        </div>
     </div>
 
     {{-- Keyword Cloud --}}

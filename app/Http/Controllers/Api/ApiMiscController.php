@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Admin\TempatController;
 use App\Http\Controllers\Controller;
-use App\Models\Favorit;
 use App\Models\AnalisisSentimen;
+use App\Models\Favorit;
+use App\Models\Tempat;
 use App\Services\SawRecommendationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use League\Csv\Reader;
 
 class ApiMiscController extends Controller
 {
@@ -16,6 +16,7 @@ class ApiMiscController extends Controller
     public function favoritIndex(Request $request)
     {
         $favorit = $request->user()->favorit()
+            ->whereHas('tempat', fn ($query) => $query->aktif())
             ->with(['tempat.kategori', 'tempat.kecamatan'])
             ->latest()
             ->paginate(15);
@@ -25,6 +26,10 @@ class ApiMiscController extends Controller
 
     public function favoritStore(Request $request, string $tempatId)
     {
+        if (! Tempat::aktif()->whereKey($tempatId)->exists()) {
+            return response()->json(['success' => false, 'message' => 'Tempat tidak tersedia.'], 404);
+        }
+
         $existing = Favorit::where('user_id', $request->user()->id)
             ->where('tempat_id', $tempatId)->first();
 
@@ -115,7 +120,8 @@ class ApiMiscController extends Controller
         $request->validate(['csv_file' => 'required|file|mimes:csv,txt']);
 
         // Delegate to admin controller logic
-        $controller = app(\App\Http\Controllers\Admin\TempatController::class);
+        $controller = app(TempatController::class);
+
         return $controller->importCsv($request);
     }
 }

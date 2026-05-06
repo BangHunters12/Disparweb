@@ -4,8 +4,8 @@ namespace App\Providers;
 
 use App\Models\Ulasan;
 use App\Observers\UlasanObserver;
-use App\Services\SentimentAnalysisService;
 use App\Services\SawRecommendationService;
+use App\Services\SentimentAnalysisService;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider

@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Tempat;
 use App\Models\Kategori;
-use Illuminate\Http\Request;
+use App\Models\Tempat;
 
 class MapController extends Controller
 {
@@ -15,7 +14,7 @@ class MapController extends Controller
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
             ->get()
-            ->map(fn($t) => [
+            ->map(fn ($t) => [
                 'id' => $t->id,
                 'nama' => $t->nama_usaha,
                 'lat' => (float) $t->latitude,

@@ -1,15 +1,14 @@
 <?php
 
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\ExploreController;
-use App\Http\Controllers\MapController;
-use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\SawController;
+use App\Http\Controllers\Admin\SentimenController;
+use App\Http\Controllers\Admin\TempatController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\GoogleController;
-use App\Http\Controllers\Admin\AdminDashboardController;
-use App\Http\Controllers\Admin\TempatController;
-use App\Http\Controllers\Admin\SentimenController;
-use App\Http\Controllers\Admin\SawController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExploreController;
+use App\Http\Controllers\MapController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -17,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 | Public Routes
 |--------------------------------------------------------------------------
 */
-Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::view('/', 'landing')->name('home');
 Route::get('/explore', [ExploreController::class, 'index'])->name('explore');
 Route::get('/tempat/{id}', [ExploreController::class, 'show'])->name('tempat.show');
 Route::get('/peta', [MapController::class, 'index'])->name('map');
@@ -43,7 +42,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middl
 | User Dashboard Routes
 |--------------------------------------------------------------------------
 */
-Route::middleware('auth')->prefix('dashboard')->name('dashboard.')->group(function () {
+Route::middleware(['auth', 'web_user_disabled'])->prefix('dashboard')->name('dashboard.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('index');
     Route::get('/profile', [DashboardController::class, 'profile'])->name('profile');
     Route::put('/profile', [DashboardController::class, 'updateProfile'])->name('profile.update');
@@ -60,12 +59,14 @@ Route::middleware('auth')->prefix('dashboard')->name('dashboard.')->group(functi
 | Admin Routes
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
 
     // Tempat CRUD
     Route::resource('tempat', TempatController::class);
     Route::post('tempat/import-csv', [TempatController::class, 'importCsv'])->name('tempat.import-csv');
+    Route::put('tempat/{tempat}/ulasan/{ulasan}', [TempatController::class, 'updateUlasan'])->name('tempat.ulasan.update');
+    Route::delete('tempat/{tempat}/ulasan/{ulasan}', [TempatController::class, 'destroyUlasan'])->name('tempat.ulasan.destroy');
 
     // Sentimen
     Route::get('/sentimen', [SentimenController::class, 'index'])->name('sentimen.index');

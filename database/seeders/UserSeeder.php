@@ -13,7 +13,7 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
-        $userRole  = Role::firstOrCreate(['name' => 'user',  'guard_name' => 'web']);
+        $userRole = Role::firstOrCreate(['name' => 'user',  'guard_name' => 'web']);
 
         $admin = User::create([
             'id' => (string) Str::uuid(),

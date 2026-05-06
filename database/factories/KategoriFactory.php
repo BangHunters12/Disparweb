@@ -9,7 +9,7 @@ class KategoriFactory extends Factory
     public function definition(): array
     {
         return [
-            'nama' => fake()->word() . ' Category',
+            'nama' => fake()->word().' Category',
             'jenis' => fake()->randomElement(['restoran', 'hotel', 'ekraf']),
             'icon' => 'star',
             'warna' => '#f59e0b',

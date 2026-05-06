@@ -12,7 +12,7 @@ class SentimentAnalysisServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new SentimentAnalysisService();
+        $this->service = new SentimentAnalysisService;
     }
 
     public function test_analyze_returns_correct_structure(): void
@@ -72,13 +72,13 @@ class SentimentAnalysisServiceTest extends TestCase
     public function test_stemming_removes_suffix(): void
     {
         $stemmed = $this->service->stem('makanan');
-        $this->assertEquals('mak', $stemmed);
+        $this->assertEquals('makan', $stemmed);
     }
 
     public function test_negation_flips_sentiment(): void
     {
         $positive = $this->service->analyze('Makanan enak dan bagus');
-        $negated  = $this->service->analyze('Makanan tidak enak dan tidak bagus');
+        $negated = $this->service->analyze('Makanan tidak enak dan tidak bagus');
         $this->assertGreaterThan($negated['skor_positif'], $positive['skor_positif']);
     }
 
@@ -91,7 +91,7 @@ class SentimentAnalysisServiceTest extends TestCase
 
     public function test_extract_keywords_returns_sentiment_words(): void
     {
-        $tokens   = ['enak', 'bagus', 'pelayanan', 'nyaman'];
+        $tokens = ['enak', 'bagus', 'pelayanan', 'nyaman'];
         $keywords = $this->service->extractKeywords($tokens);
         $this->assertContains('enak', $keywords);
         $this->assertContains('bagus', $keywords);

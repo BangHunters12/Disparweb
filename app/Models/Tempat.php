@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Tempat extends Model
 {
-    use HasUuids;
+    use HasFactory, HasUuids;
 
     protected $table = 'tempat';
 
@@ -63,6 +64,11 @@ class Tempat extends Model
         return $this->hasMany(Ulasan::class);
     }
 
+    public function latestUlasan()
+    {
+        return $this->hasOne(Ulasan::class)->latestOfMany('created_at');
+    }
+
     public function favorit()
     {
         return $this->hasMany(Favorit::class);
@@ -89,7 +95,7 @@ class Tempat extends Model
 
     public function scopeByKategori(Builder $query, string $jenis): Builder
     {
-        return $query->whereHas('kategori', fn($q) => $q->where('jenis', $jenis));
+        return $query->whereHas('kategori', fn ($q) => $q->where('jenis', $jenis));
     }
 
     public function scopeByKecamatan(Builder $query, string $kecamatanId): Builder
@@ -105,6 +111,7 @@ class Tempat extends Model
         if ($max !== null) {
             $query->where('harga_max', '<=', $max);
         }
+
         return $query;
     }
 
@@ -112,7 +119,7 @@ class Tempat extends Model
     {
         return $query->whereHas('ulasan', function ($q) use ($rating) {
             $q->selectRaw('AVG(rating) as avg_rating')
-              ->havingRaw('AVG(rating) >= ?', [$rating]);
+                ->havingRaw('AVG(rating) >= ?', [$rating]);
         });
     }
 
@@ -130,6 +137,7 @@ class Tempat extends Model
     public function getSkorSawAttribute(): ?float
     {
         $saw = $this->rekomendasiSaw()->whereNull('user_id')->first();
+
         return $saw?->skor_saw_final;
     }
 }

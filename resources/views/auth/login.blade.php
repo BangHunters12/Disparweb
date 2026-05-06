@@ -2,8 +2,8 @@
 @section('title', 'Masuk')
 
 @section('content')
-<h2 class="text-2xl font-bold text-white mb-1">Selamat Datang!</h2>
-<p class="text-gray-400 text-sm mb-8">Masuk untuk mengakses fitur lengkap BondoWisata</p>
+<h2 class="text-2xl font-bold text-white mb-1">Admin BondoWisata</h2>
+<p class="text-gray-400 text-sm mb-8">Masuk untuk mengelola data tempat, ulasan, sentimen, dan rekomendasi.</p>
 
 @if($errors->any())
     <div class="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm mb-5">
@@ -45,6 +45,6 @@
 </a>
 
 <p class="text-center text-gray-400 text-sm mt-6">
-    Belum punya akun? <a href="{{ route('register') }}" class="text-amber-400 hover:text-amber-300 font-medium">Daftar sekarang</a>
+    Akun pengguna dibuat dan digunakan melalui aplikasi mobile.
 </p>
 @endsection

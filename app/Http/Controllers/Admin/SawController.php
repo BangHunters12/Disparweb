@@ -9,9 +9,9 @@ use Illuminate\Http\Request;
 
 class SawController extends Controller
 {
-    public function index()
+    public function index(SawRecommendationService $service)
     {
-        $weights = config('saw.weights');
+        $weights = $service->getWeights();
 
         $rankings = RekomendasiSaw::whereNull('user_id')
             ->with(['tempat.kategori', 'tempat.kecamatan'])
