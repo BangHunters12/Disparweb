@@ -7,6 +7,7 @@
     <title>@yield('title', 'BondoWisata') — Wisata Bondowoso</title>
     <meta name="description" content="@yield('meta-description', 'Temukan destinasi wisata terbaik di Kabupaten Bondowoso — Restoran, Hotel, dan Ekonomi Kreatif.')">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @stack('head-scripts')
 </head>
 <body class="bg-dark-900 text-slate-200 font-sans antialiased">
 

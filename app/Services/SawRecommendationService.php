@@ -66,9 +66,11 @@ class SawRecommendationService
                 ->count();
             $skorSentimen = $totalSentimen > 0 ? ($positifCount / $totalSentimen) : 0.5;
 
-            // Price score (use average of min-max, lower is better for cost)
-            $avgHarga = ($tempat->harga_min + $tempat->harga_max) / 2;
-            if ($avgHarga <= 0) $avgHarga = 1;
+            // Price score — handle null harga safely
+            $hargaMin = (float) ($tempat->harga_min ?? 0);
+            $hargaMax = (float) ($tempat->harga_max ?? $hargaMin);
+            $avgHarga = ($hargaMin + $hargaMax) / 2;
+            if ($avgHarga <= 0) $avgHarga = 50000; // default 50k jika tidak ada harga
 
             // Popularity: number of reviews
             $popularitas = $tempat->ulasan()->count();

@@ -18,10 +18,17 @@ class SentimenController extends Controller
             'negatif' => AnalisisSentimen::where('label_sentimen', 'negatif')->count(),
         ];
 
-        // Keyword cloud data
+        // Keyword cloud — kata_kunci disimpan sebagai JSON array
         $allKeywords = AnalisisSentimen::whereNotNull('kata_kunci')
-            ->pluck('kata_kunci')
-            ->flatten()
+            ->get()
+            ->flatMap(function ($a) {
+                $kw = $a->kata_kunci;
+                if (is_string($kw)) {
+                    $kw = json_decode($kw, true) ?? [];
+                }
+                return is_array($kw) ? $kw : [];
+            })
+            ->filter()
             ->countBy()
             ->sortDesc()
             ->take(50)
@@ -37,19 +44,24 @@ class SentimenController extends Controller
     public function reanalyze(string $ulasanId)
     {
         $ulasan = Ulasan::findOrFail($ulasanId);
-        AnalyzeSentimentJob::dispatch($ulasan);
 
-        return back()->with('success', 'Analisis sentimen dijadwalkan ulang.');
+        // Jalankan langsung (synchronous) tanpa queue worker
+        AnalyzeSentimentJob::dispatchSync($ulasan);
+
+        return back()->with('success', 'Analisis sentimen berhasil diperbarui.');
     }
 
     public function reanalyzeAll()
     {
         $ulasan = Ulasan::whereNotNull('teks_ulasan')->get();
 
+        $count = 0;
         foreach ($ulasan as $u) {
-            AnalyzeSentimentJob::dispatch($u);
+            // Jalankan langsung tanpa queue agar hasilnya langsung terlihat
+            AnalyzeSentimentJob::dispatchSync($u);
+            $count++;
         }
 
-        return back()->with('success', 'Analisis sentimen untuk ' . $ulasan->count() . ' ulasan dijadwalkan.');
+        return back()->with('success', "Analisis sentimen selesai untuk {$count} ulasan.");
     }
 }

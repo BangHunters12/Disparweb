@@ -1,0 +1,14 @@
+# Production override — tanpa phpMyAdmin sama sekali
+# Jalankan dengan: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  mysql:
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    # Tidak ada ports — MySQL TIDAK boleh diakses dari luar
+    networks:
+      - bondowisata_net

@@ -11,7 +11,16 @@ class ExploreController extends Controller
 {
     public function index(Request $request)
     {
-        $kategoriList = Kategori::all();
+        // Group by jenis agar setiap jenis (restoran/hotel/ekraf) hanya muncul sekali
+        $kategoriList = Kategori::withCount(['tempat' => fn($q) => $q->where('status', 'aktif')])
+            ->get()
+            ->groupBy('jenis')
+            ->map(fn($group) => (object) [
+                'jenis'        => $group->first()->jenis,
+                'nama'         => $group->first()->nama,
+                'tempat_count' => $group->sum('tempat_count'),
+            ])
+            ->values();
         $kecamatanList = Kecamatan::orderBy('nama')->get();
 
         $query = Tempat::aktif()->with(['kategori', 'kecamatan', 'ulasan']);

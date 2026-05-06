@@ -1,0 +1,51 @@
+services:
+  # ── MySQL ────────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: bondowisata_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    # Hanya localhost yang bisa akses — tidak bisa dari internet
+    ports:
+      - "127.0.0.1:3307:3306"
+    volumes:
+      - bondowisata_mysql_data:/var/lib/mysql
+    networks:
+      - bondowisata_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── phpMyAdmin (HANYA untuk development, matikan di production) ──────
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: bondowisata_pma
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      # Blokir akses root lewat phpMyAdmin
+      PMA_ABSOLUTE_URI: http://localhost:8081/
+    ports:
+      - "127.0.0.1:8081:80"   # hanya bisa diakses dari localhost, bukan dari luar
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - bondowisata_net
+    profiles:
+      - dev    # hanya jalan kalau pakai: docker compose --profile dev up
+
+volumes:
+  bondowisata_mysql_data:
+
+networks:
+  bondowisata_net:
+    driver: bridge

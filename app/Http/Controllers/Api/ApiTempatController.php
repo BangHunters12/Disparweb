@@ -44,11 +44,22 @@ class ApiTempatController extends Controller
         };
 
         $perPage = min($request->get('per_page', 15), 50);
-        $tempat = $query->paginate($perPage);
+        $tempat = $query->withCount('ulasan')->withAvg('ulasan', 'rating')->paginate($perPage);
+
+        $tempat->getCollection()->transform(function ($t) {
+            $t->rata_rating = round($t->ulasan_avg_rating ?? 0, 1);
+            $t->total_ulasan = $t->ulasan_count ?? 0;
+            return $t;
+        });
 
         return response()->json([
             'success' => true,
-            'data' => $tempat,
+            'data' => $tempat->items(),
+            'meta' => [
+                'total' => $tempat->total(),
+                'last_page' => $tempat->lastPage(),
+                'current_page' => $tempat->currentPage(),
+            ],
         ]);
     }
 
@@ -79,11 +90,22 @@ class ApiTempatController extends Controller
             $query->whereHas('tempat.kategori', fn($q) => $q->where('jenis', $request->kategori));
         }
 
-        $perPage = min($request->get('per_page', 15), 50);
+        $limit = min($request->get('limit', $request->get('per_page', 15)), 50);
+        $results = $query->take($limit)->get();
+
+        $data = $results->map(function ($r) {
+            $t = $r->tempat;
+            if (!$t) return null;
+            $t->rata_rating = round($t->ulasan()->avg('rating') ?? 0, 1);
+            $t->total_ulasan = $t->ulasan()->count();
+            $t->skor_saw = $r->skor_saw_final;
+            $t->peringkat = $r->peringkat;
+            return $t;
+        })->filter()->values();
 
         return response()->json([
             'success' => true,
-            'data' => $query->paginate($perPage),
+            'data' => $data,
         ]);
     }
 

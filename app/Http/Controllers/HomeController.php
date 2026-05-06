@@ -13,11 +13,23 @@ class HomeController extends Controller
 {
     public function index()
     {
-        $totalTempat = Tempat::aktif()->count();
-        $totalUlasan = Ulasan::count();
+        $totalTempat    = Tempat::aktif()->count();
+        $totalUlasan    = Ulasan::count();
         $totalKecamatan = Kecamatan::count();
-        $kategoriList = Kategori::withCount(['tempat' => fn($q) => $q->where('status', 'aktif')])->get();
 
+        // Kategori dikelompokkan per jenis — hanya 3 yang tampil (restoran/hotel/ekraf)
+        $kategoriList = Kategori::withCount([
+            'tempat' => fn($q) => $q->where('status', 'aktif')
+        ])->get()
+            ->groupBy('jenis')
+            ->map(fn($group) => (object) [
+                'jenis'        => $group->first()->jenis,
+                'nama'         => $group->first()->nama,
+                'tempat_count' => $group->sum('tempat_count'),
+            ])
+            ->values();
+
+        // Top rekomendasi SAW (6 teratas)
         $topRekomendasi = RekomendasiSaw::whereNull('user_id')
             ->with(['tempat.kategori', 'tempat.kecamatan'])
             ->orderBy('peringkat')

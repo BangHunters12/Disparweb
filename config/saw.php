@@ -1,51 +1,20 @@
 <?php
 
 return [
-    /*
-    |--------------------------------------------------------------------------
-    | SAW (Simple Additive Weighting) Configuration
-    |--------------------------------------------------------------------------
-    |
-    | Bobot kriteria untuk perhitungan rekomendasi SAW.
-    | Total semua bobot harus = 1.0 (100%)
-    |
-    */
-
     'weights' => [
-        'rating'      => 0.40, // 40% - Rata-rata rating ulasan
-        'sentimen'    => 0.25, // 25% - Skor sentimen positif
-        'harga'       => 0.15, // 15% - Keterjangkauan harga (cost benefit)
-        'popularitas' => 0.10, // 10% - Jumlah ulasan/kunjungan
-        'kebaruan'    => 0.10, // 10% - Kebaruan data/ulasan
+        'rating' => 0.35,
+        'sentimen' => 0.15,
+        'harga' => 0.50,
+        'popularitas' => 0.00,
+        'kebaruan' => 0.00,
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Tipe Kriteria
-    |--------------------------------------------------------------------------
-    | 'benefit' = semakin tinggi semakin baik
-    | 'cost'    = semakin rendah semakin baik
-    */
-
     'criteria_types' => [
-        'rating'      => 'benefit',
-        'sentimen'    => 'benefit',
-        'harga'       => 'cost',
+        'rating' => 'benefit',
+        'sentimen' => 'benefit',
+        'harga' => 'cost',
         'popularitas' => 'benefit',
-        'kebaruan'    => 'benefit',
+        'kebaruan' => 'benefit',
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Jadwal Perhitungan Ulang
-    |--------------------------------------------------------------------------
-    */
     'recalculate_schedule' => 'daily',
-
-    /*
-    |--------------------------------------------------------------------------
-    | Minimum Ulasan untuk Masuk Rekomendasi
-    |--------------------------------------------------------------------------
-    */
     'min_reviews' => 1,
 ];
