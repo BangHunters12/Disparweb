@@ -13,16 +13,11 @@ class Favorit extends Model
 
     protected $fillable = [
         'user_id',
-        'tempat_id',
+        'restoran_id',
     ];
 
-    public function user()
+    public function restoran()
     {
-        return $this->belongsTo(User::class);
-    }
-
-    public function tempat()
-    {
-        return $this->belongsTo(Tempat::class);
+        return $this->belongsTo(Restoran::class);
     }
 }

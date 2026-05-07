@@ -1,103 +1,136 @@
-@extends('layouts.dashboard')
-@section('title', 'Rekomendasi SAW')
-@section('page-title', 'Rekomendasi SAW')
+@extends('layouts.admin')
+@section('title', 'Konfigurasi SAW')
+@section('page-title', 'SAW — Sistem Rekomendasi')
 
 @section('content')
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-    {{-- Weight Config --}}
-    <div class="card p-6">
-        <h3 class="font-bold text-white mb-4">⚙️ Konfigurasi Bobot</h3>
-        @if($lastCalculated)
-            <p class="text-xs text-gray-500 mb-4">Terakhir dihitung: {{ $lastCalculated->diffForHumans() }}</p>
-        @endif
-        <form action="{{ route('admin.saw.recalculate') }}" method="POST" class="space-y-4">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+    {{-- Config Form --}}
+    <div class="bg-[#1a1f2e] border border-[#2d3548] rounded-2xl p-5">
+        <h3 class="font-bold text-white text-sm mb-1">Bobot Kriteria SAW</h3>
+        <p class="text-xs text-gray-500 mb-5">Total bobot harus = 100%</p>
+
+        <form method="POST" action="{{ route('admin.saw.update-weights') }}">
             @csrf
             @php
-                $criteria = [
-                    ['key'=>'rating',      'label'=>'Rating',       'pct'=>40],
-                    ['key'=>'sentimen',    'label'=>'Sentimen',     'pct'=>25],
-                    ['key'=>'harga',       'label'=>'Harga',        'pct'=>15],
-                    ['key'=>'popularitas', 'label'=>'Popularitas',  'pct'=>10],
-                    ['key'=>'kebaruan',    'label'=>'Kebaruan',     'pct'=>10],
-                ];
+            $fields = [
+                'bobot_rating'      => ['label'=>'Rating Pengunjung',  'color'=>'amber'],
+                'bobot_sentimen'    => ['label'=>'Sentimen Publik',    'color'=>'emerald'],
+                'bobot_harga'       => ['label'=>'Efisiensi Harga',    'color'=>'blue'],
+                'bobot_popularitas' => ['label'=>'Popularitas',        'color'=>'purple'],
+                'bobot_kebaruan'    => ['label'=>'Kebaruan Data',      'color'=>'orange'],
+            ];
             @endphp
-            @foreach($criteria as $c)
+
+            <div class="space-y-4" id="sliders-container">
+                @foreach($fields as $name => $meta)
                 <div>
-                    <div class="flex justify-between text-sm mb-1">
-                        <label class="text-gray-300">{{ $c['label'] }}</label>
-                        <span class="text-amber-400 font-semibold" id="pct_{{ $c['key'] }}">{{ round($weights[$c['key']] * 100) }}%</span>
+                    <div class="flex justify-between mb-1.5">
+                        <label class="text-xs font-semibold text-gray-300">{{ $meta['label'] }}</label>
+                        <span id="val-{{ $name }}" class="text-xs font-black text-amber-400">{{ number_format($config->$name, 0) }}%</span>
                     </div>
-                    <input type="range" name="w_{{ $c['key'] }}" min="0" max="1" step="0.05"
-                           value="{{ $weights[$c['key']] }}"
+                    <input type="range" name="{{ $name }}" id="{{ $name }}"
+                           value="{{ $config->$name }}" min="0" max="100" step="1"
                            class="w-full accent-amber-500"
-                           oninput="document.getElementById('pct_{{ $c['key'] }}').textContent = Math.round(this.value * 100) + '%'">
+                           oninput="updateSlider('{{ $name }}')">
                 </div>
-            @endforeach
-            <div class="pt-3 border-t border-dark-700">
-                <p class="text-xs text-gray-500 mb-3">Total bobot harus = 100%. Slider menggunakan nilai terakhir yang tersimpan.</p>
-                <button type="submit" class="btn-primary w-full justify-center">🔄 Hitung Ulang SAW</button>
+                @endforeach
             </div>
+
+            <div class="mt-4 p-3 bg-[#0f1117] rounded-xl flex items-center justify-between">
+                <span class="text-xs text-gray-400">Total Bobot:</span>
+                <span id="total-bobot" class="text-sm font-black text-white">{{ number_format($config->bobot_rating + $config->bobot_sentimen + $config->bobot_harga + $config->bobot_popularitas + $config->bobot_kebaruan, 0) }}%</span>
+            </div>
+
+            @error('total')<p class="text-red-400 text-xs mt-2">{{ $message }}</p>@enderror
+
+            <button type="submit" class="w-full mt-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-[#0f1117] font-black rounded-xl text-sm transition-all">
+                Simpan Bobot
+            </button>
         </form>
+
+        <div class="mt-3 pt-3 border-t border-[#2d3548]">
+            <form method="POST" action="{{ route('admin.saw.recalculate') }}">
+                @csrf
+                <button type="submit" class="w-full py-2.5 bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 font-bold rounded-xl text-sm hover:bg-emerald-600/30 transition-all">
+                    🔄 Hitung Ulang SAW
+                </button>
+            </form>
+            @if($lastCalc)
+            <p class="text-xs text-gray-600 text-center mt-2">Terakhir dihitung: {{ $lastCalc->diffForHumans() }}</p>
+            @endif
+        </div>
+
+        <div class="mt-3">
+            <a href="{{ route('admin.saw.export-pdf') }}" class="flex items-center justify-center gap-2 w-full py-2.5 bg-red-600/20 border border-red-500/30 text-red-400 font-semibold rounded-xl text-sm hover:bg-red-600/30 transition-all">
+                📄 Export PDF
+            </a>
+        </div>
     </div>
 
-    {{-- Rankings --}}
-    <div class="lg:col-span-2 card overflow-hidden">
-        <div class="p-5 border-b border-dark-700">
-            <h3 class="font-bold text-white">🏆 Peringkat SAW Global</h3>
-            <p class="text-xs text-gray-500 mt-1">{{ $rankings->total() }} tempat diranking</p>
+    {{-- Results Table --}}
+    <div class="lg:col-span-2 bg-[#1a1f2e] border border-[#2d3548] rounded-2xl overflow-hidden">
+        <div class="px-5 py-4 border-b border-[#2d3548]">
+            <h3 class="font-bold text-white text-sm">Peringkat Restoran</h3>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
-                <thead class="border-b border-dark-700">
-                    <tr>
-                        <th class="text-left py-3 px-4 text-gray-400 font-medium">#</th>
-                        <th class="text-left py-3 px-4 text-gray-400 font-medium">Tempat</th>
-                        <th class="text-left py-3 px-4 text-gray-400 font-medium">Rating</th>
-                        <th class="text-left py-3 px-4 text-gray-400 font-medium">Sentimen</th>
-                        <th class="text-left py-3 px-4 text-gray-400 font-medium">Harga</th>
-                        <th class="text-left py-3 px-4 text-gray-400 font-medium">Final SAW</th>
+                <thead>
+                    <tr class="border-b border-[#2d3548]">
+                        <th class="px-4 py-3 text-left text-xs text-gray-500 font-semibold">#</th>
+                        <th class="px-4 py-3 text-left text-xs text-gray-500 font-semibold">Restoran</th>
+                        <th class="px-4 py-3 text-center text-xs text-gray-500 font-semibold hidden md:table-cell">Rating</th>
+                        <th class="px-4 py-3 text-center text-xs text-gray-500 font-semibold hidden md:table-cell">Sentimen</th>
+                        <th class="px-4 py-3 text-center text-xs text-gray-500 font-semibold hidden lg:table-cell">Harga</th>
+                        <th class="px-4 py-3 text-center text-xs text-gray-500 font-semibold hidden lg:table-cell">Populer</th>
+                        <th class="px-4 py-3 text-center text-xs text-gray-500 font-semibold">SAW Final</th>
                     </tr>
                 </thead>
-                <tbody>
-                    @forelse($rankings as $r)
-                        <tr class="border-b border-dark-700/50 hover:bg-dark-700/20 transition-colors">
-                            <td class="py-3 px-4">
-                                <span class="w-7 h-7 rounded-lg {{ $r->peringkat <= 3 ? 'bg-amber-500/20 text-amber-400' : 'bg-dark-700 text-gray-400' }} text-xs font-bold flex items-center justify-center">
-                                    {{ $r->peringkat <= 3 ? ['🥇','🥈','🥉'][$r->peringkat-1] : $r->peringkat }}
-                                </span>
-                            </td>
-                            <td class="py-3 px-4">
-                                <div class="font-medium text-white text-sm truncate max-w-[160px]">{{ $r->tempat->nama_usaha }}</div>
-                                <div class="text-xs text-gray-500">{{ $r->tempat->kecamatan->nama }}</div>
-                            </td>
-                            <td class="py-3 px-4">
-                                <div class="w-full bg-dark-700 rounded-full h-1.5 mb-1"><div class="bg-amber-400 h-1.5 rounded-full" style="width:{{ $r->skor_rating * 100 }}%"></div></div>
-                                <span class="text-xs font-mono text-amber-400">{{ number_format($r->skor_rating, 4) }}</span>
-                            </td>
-                            <td class="py-3 px-4">
-                                <div class="w-full bg-dark-700 rounded-full h-1.5 mb-1"><div class="bg-emerald-400 h-1.5 rounded-full" style="width:{{ $r->skor_sentimen * 100 }}%"></div></div>
-                                <span class="text-xs font-mono text-emerald-400">{{ number_format($r->skor_sentimen, 4) }}</span>
-                            </td>
-                            <td class="py-3 px-4">
-                                <div class="w-full bg-dark-700 rounded-full h-1.5 mb-1"><div class="bg-blue-400 h-1.5 rounded-full" style="width:{{ $r->skor_harga * 100 }}%"></div></div>
-                                <span class="text-xs font-mono text-blue-400">{{ number_format($r->skor_harga, 4) }}</span>
-                            </td>
-                            <td class="py-3 px-4">
-                                <span class="text-lg font-black text-white">{{ number_format($r->skor_saw_final, 4) }}</span>
-                            </td>
-                        </tr>
+                <tbody class="divide-y divide-[#2d3548]">
+                    @forelse($hasil as $h)
+                    <tr class="hover:bg-white/[0.02] transition-colors">
+                        <td class="px-4 py-3 text-center">
+                            <span class="w-7 h-7 rounded-lg inline-flex items-center justify-center text-xs font-black
+                                {{ $h->peringkat === 1 ? 'bg-amber-400 text-[#0f1117]' : ($h->peringkat === 2 ? 'bg-gray-300 text-[#0f1117]' : ($h->peringkat === 3 ? 'bg-orange-600 text-white' : 'bg-[#2d3548] text-gray-400')) }}">
+                                {{ $h->peringkat }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <p class="font-semibold text-white text-sm">{{ $h->restoran?->nama_usaha }}</p>
+                            <p class="text-xs text-gray-500">{{ $h->restoran?->kecamatan?->nama }}</p>
+                        </td>
+                        <td class="px-4 py-3 text-center text-xs text-amber-400 font-mono hidden md:table-cell">{{ number_format($h->skor_rating, 4) }}</td>
+                        <td class="px-4 py-3 text-center text-xs text-emerald-400 font-mono hidden md:table-cell">{{ number_format($h->skor_sentimen, 4) }}</td>
+                        <td class="px-4 py-3 text-center text-xs text-blue-400 font-mono hidden lg:table-cell">{{ number_format($h->skor_harga, 4) }}</td>
+                        <td class="px-4 py-3 text-center text-xs text-purple-400 font-mono hidden lg:table-cell">{{ number_format($h->skor_popularitas, 4) }}</td>
+                        <td class="px-4 py-3 text-center">
+                            <span class="text-amber-400 font-black font-mono">{{ number_format($h->skor_saw_final, 4) }}</span>
+                        </td>
+                    </tr>
                     @empty
-                        <tr><td colspan="6" class="text-center py-12 text-gray-500">
-                            <p class="text-3xl mb-2">📊</p>
-                            <p>Belum ada data SAW. Klik "Hitung Ulang SAW" untuk memulai.</p>
-                        </td></tr>
+                    <tr><td colspan="7" class="text-center py-10 text-gray-500 text-sm">Belum ada data SAW. Klik "Hitung Ulang SAW" untuk memulai.</td></tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-        <div class="p-4 border-t border-dark-700">
-            {{ $rankings->links('vendor.pagination.custom') }}
-        </div>
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+function updateSlider(name) {
+    const val = document.getElementById(name).value;
+    document.getElementById('val-' + name).textContent = val + '%';
+    updateTotal();
+}
+
+function updateTotal() {
+    const names = ['bobot_rating','bobot_sentimen','bobot_harga','bobot_popularitas','bobot_kebaruan'];
+    const total = names.reduce((sum, n) => sum + parseInt(document.getElementById(n).value || 0), 0);
+    const el = document.getElementById('total-bobot');
+    el.textContent = total + '%';
+    el.className = 'text-sm font-black ' + (total === 100 ? 'text-emerald-400' : 'text-red-400');
+}
+</script>
+@endpush

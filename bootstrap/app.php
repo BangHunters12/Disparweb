@@ -18,8 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->throttleApi('60,1');
         $middleware->alias([
-            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
-            'web_user_disabled' => \App\Http\Middleware\RedirectWebUsersToMobile::class,
+            'admin.auth'  => \App\Http\Middleware\EnsureIsAdmin::class,
+            'admin.guest' => \App\Http\Middleware\RedirectIfAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

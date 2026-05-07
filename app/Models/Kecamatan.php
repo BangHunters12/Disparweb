@@ -3,12 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Kecamatan extends Model
 {
-    use HasFactory, HasUuids;
+    use HasUuids;
 
     protected $table = 'kecamatan';
 
@@ -27,8 +26,13 @@ class Kecamatan extends Model
         ];
     }
 
-    public function tempat()
+    public function restoran()
     {
-        return $this->hasMany(Tempat::class);
+        return $this->hasMany(Restoran::class);
+    }
+
+    public function getJumlahRestoranAktifAttribute(): int
+    {
+        return $this->restoran()->where('status', 'aktif')->count();
     }
 }

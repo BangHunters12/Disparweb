@@ -2,40 +2,45 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Kategori;
 use App\Models\Kecamatan;
 use App\Models\RekomendasiSaw;
-use App\Models\Tempat;
+use App\Models\Restoran;
 use App\Models\Ulasan;
 
 class HomeController extends Controller
 {
     public function index()
     {
-        $totalTempat = Tempat::aktif()->count();
-        $totalUlasan = Ulasan::count();
-        $totalKecamatan = Kecamatan::count();
-        $kategoriList = Kategori::withCount(['tempat' => fn ($q) => $q->where('status', 'aktif')])->get();
+        $totalRestoran = Restoran::aktif()->count();
+        $totalUlasan   = Ulasan::count();
+        $avgRatingKota = Restoran::aktif()->where('avg_rating', '>', 0)->avg('avg_rating') ?? 0;
 
-        $topRekomendasi = RekomendasiSaw::whereNull('user_id')
-            ->with(['tempat.kategori', 'tempat.kecamatan'])
-            ->orderBy('peringkat')
+        // Top 6 by SAW score
+        $topRestoran = Restoran::aktif()
+            ->with(['kecamatan', 'rekomendasiSaw'])
+            ->join('rekomendasi_saw', 'restoran.id', '=', 'rekomendasi_saw.restoran_id')
+            ->orderByDesc('rekomendasi_saw.skor_saw_final')
+            ->select('restoran.*')
             ->take(6)
             ->get();
 
-        $tempatTerbaru = Tempat::aktif()
-            ->with(['kategori', 'kecamatan'])
-            ->latest()
-            ->take(4)
-            ->get();
+        // Fallback: jika SAW belum dihitung, ambil by avg_rating
+        if ($topRestoran->isEmpty()) {
+            $topRestoran = Restoran::aktif()
+                ->with(['kecamatan', 'rekomendasiSaw'])
+                ->orderByDesc('avg_rating')
+                ->take(6)
+                ->get();
+        }
+
+        $kecamatanList = Kecamatan::orderBy('nama')->get();
 
         return view('public.home', compact(
-            'totalTempat',
+            'totalRestoran',
             'totalUlasan',
-            'totalKecamatan',
-            'kategoriList',
-            'topRekomendasi',
-            'tempatTerbaru'
+            'avgRatingKota',
+            'topRestoran',
+            'kecamatanList'
         ));
     }
 }

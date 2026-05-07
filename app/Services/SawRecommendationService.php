@@ -2,297 +2,134 @@
 
 namespace App\Services;
 
-use App\Models\AppSetting;
+use App\Models\AnalisisSentimen;
 use App\Models\RekomendasiSaw;
-use App\Models\Tempat;
+use App\Models\Restoran;
+use App\Models\SawConfig;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class SawRecommendationService
 {
     protected array $weights;
-
     protected array $criteriaTypes;
 
     public function __construct()
     {
-        $this->weights = $this->loadWeights();
+        $config              = SawConfig::current();
+        $this->weights       = $config->normalizedWeights();
         $this->criteriaTypes = config('saw.criteria_types');
     }
 
-    /**
-     * Recalculate SAW scores for all active tempat
-     */
-    public function recalculateAll(?string $userId = null): int
+    public function calculateAll(): int
     {
-        $minReviews = (int) config('saw.min_reviews', 0);
+        $restoran = Restoran::aktif()->get();
+        if ($restoran->isEmpty()) return 0;
 
-        $query = Tempat::aktif()->withCount('ulasan');
-
-        if ($minReviews > 0) {
-            $query->has('ulasan', '>=', $minReviews);
-        }
-
-        $tempatList = $query->get();
-
-        if ($tempatList->isEmpty()) {
-            return 0;
-        }
-
-        // Step 1: Collect raw values for each criterion
-        $matrix = $this->buildDecisionMatrix($tempatList);
-
-        // Step 2: Normalize the matrix
+        $matrix     = $this->buildMatrix($restoran);
         $normalized = $this->normalizeMatrix($matrix);
+        $results    = $this->weightedSum($normalized, $restoran);
 
-        // Step 3: Calculate weighted scores
-        $results = $this->calculateWeightedScores($normalized, $tempatList);
-
-        // Step 4: Rank and save
-        $this->saveResults($results, $userId);
-
+        $this->saveResults($results);
         return count($results);
     }
 
-    /**
-     * Build the decision matrix with raw values
-     */
-    protected function buildDecisionMatrix($tempatList): array
+    protected function buildMatrix($list): array
     {
         $matrix = [];
+        foreach ($list as $r) {
+            $pctPositif = 0;
+            $total = AnalisisSentimen::whereHas('ulasan', fn($q) => $q->where('restoran_id', $r->id))->count();
+            if ($total > 0) {
+                $positif    = AnalisisSentimen::where('label_sentimen', 'positif')
+                    ->whereHas('ulasan', fn($q) => $q->where('restoran_id', $r->id))->count();
+                $pctPositif = $positif / $total;
+            }
 
-        foreach ($tempatList as $tempat) {
-            $avgRating = $tempat->ulasan()->avg('rating');
-            $avgRating = $avgRating !== null
-                ? (float) $avgRating
-                : (float) config('saw.default_rating', 3.0);
+            $avgHarga = $this->avgHarga($r);
 
-            // Sentiment score: ratio of positive sentiments
-            $totalSentimen = $tempat->analisisSentimen()->count();
-            $positifCount = $tempat->analisisSentimen()
-                ->where('label_sentimen', 'positif')
-                ->count();
-            $skorSentimen = $totalSentimen > 0 ? ($positifCount / $totalSentimen) : 0.5;
+            $lastUlasan      = $r->ulasan()->latest()->first();
+            $daysSinceLast   = Carbon::now()->diffInDays($lastUlasan?->created_at ?? $r->updated_at);
+            $kebaruan        = max(1, config('saw.recency_days', 365) - $daysSinceLast);
 
-            $avgHarga = $this->averagePrice($tempat);
-
-            // Popularity: number of reviews
-            $popularitas = $tempat->ulasan()->count();
-
-            // Recency: days since last review (newer is better)
-            $lastReview = $tempat->ulasan()->latest()->first();
-            $daysSinceLastReview = Carbon::now()->diffInDays($lastReview?->created_at ?? $tempat->updated_at);
-            $kebaruan = max(1, 365 - $daysSinceLastReview);
-
-            $matrix[$tempat->id] = [
-                'rating' => $avgRating,
-                'sentimen' => $skorSentimen,
-                'harga' => $avgHarga,
-                'popularitas' => $popularitas,
-                'kebaruan' => $kebaruan,
+            $matrix[$r->id] = [
+                'rating'      => (float) $r->avg_rating ?: (float) config('saw.default_rating', 3.0),
+                'sentimen'    => $pctPositif,
+                'harga'       => $avgHarga,
+                'popularitas' => $r->total_ulasan + ($r->total_views / 10),
+                'kebaruan'    => $kebaruan,
             ];
         }
-
         return $matrix;
     }
 
-    /**
-     * Normalize the decision matrix
-     */
     protected function normalizeMatrix(array $matrix): array
     {
-        if (empty($matrix)) {
-            return [];
-        }
-
-        $criteria = ['rating', 'sentimen', 'harga', 'popularitas', 'kebaruan'];
+        $criteria   = array_keys($this->criteriaTypes);
         $normalized = [];
 
-        foreach ($criteria as $criterion) {
-            $values = array_column($matrix, $criterion);
-            $max = max($values);
-            $min = min($values);
+        foreach ($criteria as $c) {
+            $values = array_column($matrix, $c);
+            $max    = max($values) ?: 1;
+            $min    = min($values) ?: 1;
 
-            foreach ($matrix as $tempatId => $row) {
-                $type = $this->criteriaTypes[$criterion] ?? 'benefit';
-
-                if ($type === 'benefit') {
-                    // Benefit: Rij = Xij / Max(Xij)
-                    $normalized[$tempatId][$criterion] = $max > 0
-                        ? $row[$criterion] / $max
-                        : 0;
-                } else {
-                    // Cost: Rij = Min(Xij) / Xij
-                    $normalized[$tempatId][$criterion] = $row[$criterion] > 0
-                        ? $min / $row[$criterion]
-                        : 0;
-                }
+            foreach ($matrix as $id => $row) {
+                $type = $this->criteriaTypes[$c] ?? 'benefit';
+                $normalized[$id][$c] = $type === 'benefit'
+                    ? ($row[$c] / $max)
+                    : ($max > 0 && $row[$c] > 0 ? $min / $row[$c] : 0);
             }
         }
-
         return $normalized;
     }
 
-    /**
-     * Calculate weighted scores (SAW formula: Vi = Σ(Wj * Rij))
-     */
-    protected function calculateWeightedScores(array $normalized, $tempatList): array
+    protected function weightedSum(array $normalized, $list): array
     {
         $results = [];
-
-        foreach ($tempatList as $tempat) {
-            if (! isset($normalized[$tempat->id])) {
-                continue;
-            }
-
-            $row = $normalized[$tempat->id];
-
-            $skorRating = $row['rating'] * $this->weights['rating'];
-            $skorSentimen = $row['sentimen'] * $this->weights['sentimen'];
-            $skorHarga = $row['harga'] * $this->weights['harga'];
-            $skorPopularitas = $row['popularitas'] * $this->weights['popularitas'];
-            $skorKebaruan = $row['kebaruan'] * $this->weights['kebaruan'];
-
-            $skorFinal = $skorRating + $skorSentimen + $skorHarga + $skorPopularitas + $skorKebaruan;
+        foreach ($list as $r) {
+            if (! isset($normalized[$r->id])) continue;
+            $row = $normalized[$r->id];
+            $final = ($row['rating'] * $this->weights['rating'])
+                   + ($row['sentimen'] * $this->weights['sentimen'])
+                   + ($row['harga'] * $this->weights['harga'])
+                   + ($row['popularitas'] * $this->weights['popularitas'])
+                   + ($row['kebaruan'] * $this->weights['kebaruan']);
 
             $results[] = [
-                'tempat_id' => $tempat->id,
-                'skor_rating' => round($skorRating, 4),
-                'skor_sentimen' => round($skorSentimen, 4),
-                'skor_harga' => round($skorHarga, 4),
-                'skor_popularitas' => round($skorPopularitas, 4),
-                'skor_kebaruan' => round($skorKebaruan, 4),
-                'skor_saw_final' => round($skorFinal, 4),
+                'restoran_id'      => $r->id,
+                'skor_rating'      => round($row['rating'] * $this->weights['rating'], 4),
+                'skor_sentimen'    => round($row['sentimen'] * $this->weights['sentimen'], 4),
+                'skor_harga'       => round($row['harga'] * $this->weights['harga'], 4),
+                'skor_popularitas' => round($row['popularitas'] * $this->weights['popularitas'], 4),
+                'skor_kebaruan'    => round($row['kebaruan'] * $this->weights['kebaruan'], 4),
+                'skor_saw_final'   => round($final, 4),
             ];
         }
-
-        // Sort by final score descending
-        usort($results, fn ($a, $b) => $b['skor_saw_final'] <=> $a['skor_saw_final']);
-
-        // Assign peringkat (rank)
-        foreach ($results as $i => &$result) {
-            $result['peringkat'] = $i + 1;
-        }
-
+        usort($results, fn($a, $b) => $b['skor_saw_final'] <=> $a['skor_saw_final']);
+        foreach ($results as $i => &$r) { $r['peringkat'] = $i + 1; }
         return $results;
     }
 
-    /**
-     * Save results to database
-     */
-    protected function saveResults(array $results, ?string $userId = null): void
+    protected function saveResults(array $results): void
     {
-        DB::transaction(function () use ($results, $userId) {
-            // Delete old results for this scope
-            RekomendasiSaw::where('user_id', $userId)->delete();
-
-            $now = Carbon::now();
-
-            foreach ($results as $result) {
-                RekomendasiSaw::create([
-                    'tempat_id' => $result['tempat_id'],
-                    'user_id' => $userId,
-                    'skor_rating' => $result['skor_rating'],
-                    'skor_sentimen' => $result['skor_sentimen'],
-                    'skor_harga' => $result['skor_harga'],
-                    'skor_popularitas' => $result['skor_popularitas'],
-                    'skor_kebaruan' => $result['skor_kebaruan'],
-                    'skor_saw_final' => $result['skor_saw_final'],
-                    'peringkat' => $result['peringkat'],
-                    'dihitung_at' => $now,
-                ]);
+        DB::transaction(function () use ($results) {
+            foreach ($results as $data) {
+                RekomendasiSaw::updateOrCreate(
+                    ['restoran_id' => $data['restoran_id']],
+                    array_merge($data, ['dihitung_at' => now()])
+                );
             }
         });
     }
 
-    /**
-     * Calculate SAW score for a single tempat
-     */
-    public function calculateSawScore(Tempat $tempat, ?array $weights = null): float
+    protected function avgHarga(Restoran $r): float
     {
-        $w = $weights ?? $this->weights;
-
-        $avgRating = $tempat->ulasan()->avg('rating');
-        $avgRating = $avgRating !== null
-            ? (float) $avgRating
-            : (float) config('saw.default_rating', 3.0);
-        $totalSentimen = $tempat->analisisSentimen()->count();
-        $positifCount = $tempat->analisisSentimen()->where('label_sentimen', 'positif')->count();
-        $skorSentimen = $totalSentimen > 0 ? ($positifCount / $totalSentimen) : 0.5;
-        $avgHarga = $this->averagePrice($tempat);
-        $popularitas = $tempat->ulasan()->count();
-        $lastReview = $tempat->ulasan()->latest()->first();
-        $daysSince = Carbon::now()->diffInDays($lastReview?->created_at ?? $tempat->updated_at);
-        $kebaruan = max(1, 365 - $daysSince);
-
-        // Simplified normalization using expected ranges
-        $nRating = min($avgRating / 5.0, 1.0);
-        $nSentimen = $skorSentimen;
-        $nHarga = $avgHarga > 0 ? min(50000 / $avgHarga, 1.0) : 0.5;
-        $nPopularitas = min($popularitas / 100.0, 1.0);
-        $nKebaruan = min($kebaruan / 365.0, 1.0);
-
-        return round(
-            ($nRating * $w['rating']) +
-            ($nSentimen * $w['sentimen']) +
-            ($nHarga * $w['harga']) +
-            ($nPopularitas * $w['popularitas']) +
-            ($nKebaruan * $w['kebaruan']),
-            4
-        );
+        $prices = array_filter([(float)$r->harga_min, (float)$r->harga_max], fn($p) => $p > 0);
+        return empty($prices) ? (float) config('saw.default_price', 50000) : array_sum($prices) / count($prices);
     }
 
-    /**
-     * Update weights (admin feature)
-     */
-    public function updateWeights(array $newWeights): void
+    public function getScoredList()
     {
-        $this->weights = $this->normalizeWeights($newWeights);
-
-        AppSetting::updateOrCreate(
-            ['key' => 'saw.weights'],
-            ['value' => $this->weights]
-        );
-    }
-
-    /**
-     * Get current weights
-     */
-    public function getWeights(): array
-    {
-        return $this->weights;
-    }
-
-    protected function loadWeights(): array
-    {
-        $setting = AppSetting::where('key', 'saw.weights')->first();
-
-        return $this->normalizeWeights($setting?->value ?? config('saw.weights'));
-    }
-
-    protected function normalizeWeights(array $weights): array
-    {
-        $defaults = config('saw.weights');
-        $normalized = [];
-
-        foreach ($defaults as $key => $default) {
-            $normalized[$key] = isset($weights[$key]) ? (float) $weights[$key] : (float) $default;
-        }
-
-        return $normalized;
-    }
-
-    protected function averagePrice(Tempat $tempat): float
-    {
-        $prices = array_filter([
-            (float) $tempat->harga_min,
-            (float) $tempat->harga_max,
-        ], fn (float $price) => $price > 0);
-
-        if (empty($prices)) {
-            return (float) config('saw.default_price', 50000);
-        }
-
-        return array_sum($prices) / count($prices);
+        return RekomendasiSaw::with(['restoran.kecamatan'])->orderBy('peringkat')->get();
     }
 }

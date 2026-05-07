@@ -9,15 +9,18 @@ class UlasanObserver
 {
     public function created(Ulasan $ulasan): void
     {
-        if (! empty($ulasan->teks_ulasan)) {
-            AnalyzeSentimentJob::dispatch($ulasan);
-        }
+        AnalyzeSentimentJob::dispatch($ulasan);
     }
 
-    public function updated(Ulasan $ulasan): void
+    public function deleted(Ulasan $ulasan): void
     {
-        if ($ulasan->isDirty('teks_ulasan') && ! empty($ulasan->teks_ulasan)) {
-            AnalyzeSentimentJob::dispatch($ulasan);
+        $restoran = $ulasan->restoran;
+        if ($restoran) {
+            $avg = $restoran->ulasanVisible()->avg('rating') ?? 0;
+            $restoran->update([
+                'avg_rating'   => round($avg, 2),
+                'total_ulasan' => $restoran->ulasanVisible()->count(),
+            ]);
         }
     }
 }

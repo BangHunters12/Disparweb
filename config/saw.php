@@ -3,59 +3,46 @@
 return [
     /*
     |--------------------------------------------------------------------------
-    | SAW (Simple Additive Weighting) Configuration
+    | SAW Default Weights (stored in DB via saw_config table)
     |--------------------------------------------------------------------------
-    |
-    | Bobot kriteria untuk perhitungan rekomendasi SAW.
-    | Total semua bobot harus = 1.0 (100%)
-    |
+    | These are fallback defaults when no DB config exists yet.
+    | Total must equal 100.
     */
-
-    'weights' => [
-        'rating' => 0.40, // 40% - Rata-rata rating ulasan
-        'sentimen' => 0.25, // 25% - Skor sentimen positif
-        'harga' => 0.15, // 15% - Keterjangkauan harga (cost benefit)
-        'popularitas' => 0.10, // 10% - Jumlah ulasan/kunjungan
-        'kebaruan' => 0.10, // 10% - Kebaruan data/ulasan
+    'default_weights' => [
+        'rating'      => 40.00,
+        'sentimen'    => 25.00,
+        'harga'       => 15.00,
+        'popularitas' => 10.00,
+        'kebaruan'    => 10.00,
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Tipe Kriteria
+    | Criteria Types
     |--------------------------------------------------------------------------
-    | 'benefit' = semakin tinggi semakin baik
-    | 'cost'    = semakin rendah semakin baik
+    | benefit = higher is better (normalize: Xij / max)
+    | cost    = lower is better (normalize: min / Xij)
     */
-
     'criteria_types' => [
-        'rating' => 'benefit',
-        'sentimen' => 'benefit',
-        'harga' => 'cost',
+        'rating'      => 'benefit',
+        'sentimen'    => 'benefit',
+        'harga'       => 'cost',
         'popularitas' => 'benefit',
-        'kebaruan' => 'benefit',
+        'kebaruan'    => 'benefit',
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Jadwal Perhitungan Ulang
+    | Default Values for New Restaurants
     |--------------------------------------------------------------------------
-    */
-    'recalculate_schedule' => 'daily',
-
-    /*
-    |--------------------------------------------------------------------------
-    | Minimum Ulasan untuk Masuk Rekomendasi
-    |--------------------------------------------------------------------------
-    */
-    'min_reviews' => 0,
-
-    /*
-    |--------------------------------------------------------------------------
-    | Nilai Default untuk Tempat Baru
-    |--------------------------------------------------------------------------
-    | Tempat aktif yang belum punya ulasan tetap masuk rekomendasi dengan nilai
-    | netral supaya data baru tidak hilang dari proses bisnis.
     */
     'default_rating' => 3.0,
-    'default_price' => 50000,
+    'default_price'  => 50000,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Kebaruan (Recency) Settings
+    |--------------------------------------------------------------------------
+    */
+    'recency_days' => 365, // max recency window in days
 ];

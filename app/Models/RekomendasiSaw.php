@@ -10,12 +10,10 @@ class RekomendasiSaw extends Model
     use HasUuids;
 
     protected $table = 'rekomendasi_saw';
-
     public $timestamps = false;
 
     protected $fillable = [
-        'tempat_id',
-        'user_id',
+        'restoran_id',
         'skor_rating',
         'skor_sentimen',
         'skor_harga',
@@ -29,24 +27,18 @@ class RekomendasiSaw extends Model
     protected function casts(): array
     {
         return [
-            'skor_rating' => 'decimal:4',
-            'skor_sentimen' => 'decimal:4',
-            'skor_harga' => 'decimal:4',
+            'skor_rating'      => 'decimal:4',
+            'skor_sentimen'    => 'decimal:4',
+            'skor_harga'       => 'decimal:4',
             'skor_popularitas' => 'decimal:4',
-            'skor_kebaruan' => 'decimal:4',
-            'skor_saw_final' => 'decimal:4',
-            'peringkat' => 'integer',
-            'dihitung_at' => 'datetime',
+            'skor_kebaruan'    => 'decimal:4',
+            'skor_saw_final'   => 'decimal:4',
+            'dihitung_at'      => 'datetime',
         ];
     }
 
-    public function tempat()
+    public function restoran()
     {
-        return $this->belongsTo(Tempat::class);
-    }
-
-    public function user()
-    {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Restoran::class);
     }
 }

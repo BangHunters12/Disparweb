@@ -8,18 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('kecamatan', function (Blueprint $table) {
+        Schema::create('favorit', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('nama', 100);
-            $table->string('kode_pos', 10)->nullable();
-            $table->decimal('lat_center', 10, 8)->nullable();
-            $table->decimal('lng_center', 11, 8)->nullable();
+            $table->uuid('user_id'); // Flutter app user - no FK constraint
+            $table->foreignUuid('restoran_id')->constrained('restoran')->cascadeOnDelete();
             $table->timestamps();
+            $table->unique(['user_id', 'restoran_id']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('kecamatan');
+        Schema::dropIfExists('favorit');
     }
 };

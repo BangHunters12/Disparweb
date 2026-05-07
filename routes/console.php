@@ -1,8 +1,6 @@
 <?php
 
-use App\Services\SawRecommendationService;
+use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Schedule;
 
-Schedule::call(function () {
-    app(SawRecommendationService::class)->recalculateAll();
-})->daily()->name('saw-recalculate')->withoutOverlapping();
+Schedule::command('saw:recalculate')->dailyAt('02:00');

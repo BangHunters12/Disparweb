@@ -8,19 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('kategori', function (Blueprint $table) {
+        Schema::create('admins', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('nama', 100);
-            $table->enum('jenis', ['restoran', 'hotel', 'ekraf']);
-            $table->string('icon', 50)->nullable();
-            $table->string('warna', 10)->nullable();
-            $table->text('deskripsi')->nullable();
+            $table->string('email', 150)->unique();
+            $table->string('password');
+            $table->string('foto_profil', 255)->nullable();
+            $table->rememberToken();
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('kategori');
+        Schema::dropIfExists('admins');
     }
 };

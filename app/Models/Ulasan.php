@@ -3,48 +3,63 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Ulasan extends Model
 {
-    use HasFactory, HasUuids;
+    use HasUuids;
 
     protected $table = 'ulasan';
 
     protected $fillable = [
-        'tempat_id',
+        'restoran_id',
         'user_id',
+        'nama_reviewer',
+        'foto_reviewer',
         'rating',
         'teks_ulasan',
         'platform_sumber',
         'tgl_kunjungan',
         'foto_ulasan',
         'helpful_count',
+        'is_visible',
     ];
 
     protected function casts(): array
     {
         return [
-            'rating' => 'decimal:1',
-            'tgl_kunjungan' => 'date',
-            'foto_ulasan' => 'array',
-            'helpful_count' => 'integer',
+            'rating'         => 'decimal:1',
+            'tgl_kunjungan'  => 'date',
+            'foto_ulasan'    => 'array',
+            'is_visible'     => 'boolean',
         ];
     }
 
-    public function tempat()
+    public function restoran()
     {
-        return $this->belongsTo(Tempat::class);
-    }
-
-    public function user()
-    {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Restoran::class);
     }
 
     public function analisisSentimen()
     {
         return $this->hasOne(AnalisisSentimen::class);
+    }
+
+    public function getPlatformBadgeAttribute(): string
+    {
+        return match ($this->platform_sumber) {
+            'gmaps'  => 'Google Maps',
+            'dispar' => 'Dinas Pariwisata',
+            default  => 'Aplikasi',
+        };
+    }
+
+    public function getPlatformColorAttribute(): string
+    {
+        return match ($this->platform_sumber) {
+            'gmaps'  => 'blue',
+            'dispar' => 'green',
+            default  => 'amber',
+        };
     }
 }
